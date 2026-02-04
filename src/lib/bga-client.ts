@@ -1,8 +1,8 @@
-import { BGAConfig, LoginResponse, BGASession } from './bga-types';
+import { BGAConfig, LoginResponse, BGASession, GetPlayerFinishedGamesResponse } from './bga-types';
 
 export class BGAClient {
   private session: BGASession;
-  private baseUrl = 'https://en.boardgamearena.com';
+  private baseUrl = 'https://boardgamearena.com';
 
   constructor() {
     this.session = {
@@ -174,5 +174,96 @@ export class BGAClient {
    */
   isLoggedIn(): boolean {
     return !!this.session.userId && this.session.cookies.has('TournoiEnLigneidt');
+  }
+
+  /**
+   * Fetch finished games for a specific player
+   *
+   * @param playerId - BGA player ID to fetch games for
+   * @param gameId - BGA game ID (e.g., 1495 for Gaia Project)
+   * @param page - Page number for pagination (1-based, returns 10 games per page)
+   * @returns Response containing list of finished game tables
+   *
+   * @example
+   * const games = await client.getPlayerFinishedGames(96457033, 1495, 1);
+   * console.log(`Fetched ${games.data.tables.length} games`);
+   */
+  async getPlayerFinishedGames(
+    playerId: number,
+    gameId: number,
+    page: number = 1
+  ): Promise<GetPlayerFinishedGamesResponse> {
+    if (!this.isLoggedIn()) {
+      throw new Error('Not logged in. Call login() first.');
+    }
+
+    console.log(`[BGAClient] Fetching finished games for player=${playerId}, game=${gameId}, page=${page}`);
+
+    try {
+      // Step 1: Visit the gamestats page first to establish session context
+      console.log(`[BGAClient] Visiting gamestats page to establish session...`);
+      const gamestatsPageUrl = `${this.baseUrl}/gamestats?game=${gameId}`;
+
+      const pageResponse = await fetch(gamestatsPageUrl, {
+        method: 'GET',
+        headers: {
+          'User-Agent':
+            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:146.0) Gecko/20100101 Firefox/146.0',
+          Accept:
+            'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+          'Accept-Language': 'en-GB,en;q=0.5',
+          Cookie: this.getCookieHeader(),
+        },
+      });
+
+      if (!pageResponse.ok) {
+        throw new Error(`Failed to access gamestats page: ${pageResponse.status}`);
+      }
+
+      // Store any new cookies from the page visit
+      this.storeCookiesFromResponse(pageResponse);
+
+      // Step 2: Now make the API request for games list
+      console.log(`[BGAClient] Making API request for finished games...`);
+
+      // Build query parameters matching BGA's expected format
+      const params = new URLSearchParams({
+        player: playerId.toString(),
+        opponent_id: '0', // 0 = all opponents
+        game_id: gameId.toString(),
+        finished: '0', // 0 = finished games (confusing but correct)
+        page: page.toString(),
+        updateStats: '0', // 0 = don't include stats (faster)
+        'dojo.preventCache': Date.now().toString(),
+      });
+
+      const url = `${this.baseUrl}/gamestats/gamestats/getGames.html?${params.toString()}`;
+
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'User-Agent':
+            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:146.0) Gecko/20100101 Firefox/146.0',
+          Accept: '*/*',
+          'Accept-Language': 'en-GB,en;q=0.5',
+          'X-Request-Token': this.session.requestToken,
+          Referer: gamestatsPageUrl,
+          Cookie: this.getCookieHeader(),
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch games: ${response.status} ${response.statusText}`);
+      }
+
+      const gamesResponse: GetPlayerFinishedGamesResponse = await response.json();
+
+      console.log(`[BGAClient] Successfully fetched ${gamesResponse.data.tables.length} games`);
+
+      return gamesResponse;
+    } catch (error) {
+      console.error('[BGAClient] Failed to fetch finished games:', error);
+      throw error;
+    }
   }
 }
