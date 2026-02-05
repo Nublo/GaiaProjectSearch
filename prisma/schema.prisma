@@ -13,28 +13,74 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ============================================================================
+// GAME MODEL - One row per game
+// ============================================================================
 model Game {
-  id            String   @id @default(cuid())
-  gameId        Int      @unique @map("game_id") // BGA game ID
-  gameLog       Json     @map("game_log") // Full JSON from BGA API
+  id           String   @id @default(cuid())
+  gameId       Int      @unique @map("game_id")
+  gameName     String   @default("gaiaproject") @map("game_name")
 
-  // Preprocessed searchable fields
-  playerName    String?  @map("player_name")
-  playerRace    String?  @map("player_race")
-  finalScore    Int?     @map("final_score")
-  playerElo     Int?     @map("player_elo")
-  gameDate      DateTime? @map("game_date")
-  roundCount    Int?     @map("round_count")
-  playerCount   Int?     @map("player_count")
-  buildingsData Json?    @map("buildings_data") // JSON array of building actions
+  // Game metadata
+  playerCount  Int      @map("player_count")
+  winnerName   String   @map("winner_name")
+  minPlayerElo Int?     @map("min_player_elo")
 
-  createdAt     DateTime @default(now()) @map("created_at")
-  updatedAt     DateTime @updatedAt @map("updated_at")
+  // Raw data preservation
+  rawGameLog   Json     @map("raw_game_log")
 
-  @@index([playerRace])
+  // Relations
+  players      Player[]
+
+  // Indexes for game-level searches
+  @@index([winnerName])
+  @@index([playerCount])
+  @@index([minPlayerElo])
+
+  @@map("games")
+}
+
+// ============================================================================
+// PLAYER MODEL - One row per player per game
+// ============================================================================
+model Player {
+  id           String   @id @default(cuid())
+
+  // Foreign key to game
+  gameId       String   @map("game_id")
+  game         Game     @relation(fields: [gameId], references: [id], onDelete: Cascade)
+
+  // Player identification
+  playerId     Int      @map("player_id")
+  playerName   String   @map("player_name")
+
+  // Race information
+  raceId       Int      @map("race_id")
+  raceName     String   @map("race_name")
+
+  // Game performance
+  finalScore   Int      @map("final_score")
+  playerElo    Int?     @map("player_elo")
+  isWinner     Boolean  @default(false) @map("is_winner")
+
+  // Buildings data (JSONB)
+  // Structure: {"buildings": [[4,5], [6], [7,5], ...]}
+  // buildings[round] = [buildingId1, buildingId2, ...]
+  buildingsData Json    @map("buildings_data")
+
+  // Indexes for player-level searches
   @@index([playerName])
+  @@index([raceId])
+  @@index([raceName])
   @@index([finalScore])
   @@index([playerElo])
-  @@index([gameDate])
-  @@map("games")
+  @@index([gameId])
+  @@index([isWinner])
+
+  // Composite indexes for common query patterns
+  @@index([raceId, finalScore])
+  @@index([gameId, raceId])
+  @@index([playerElo, finalScore])
+
+  @@map("players")
 }

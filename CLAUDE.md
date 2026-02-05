@@ -35,30 +35,53 @@ This is a web application designed with the following deployment requirements:
 ## Architecture
 
 ### Data Model
-- **Hybrid Storage Strategy**: Store both raw game logs (JSONB) and preprocessed searchable fields
-- **Expected Scale**: 10k-100k games
-- **Primary Table**: `games` with fields:
+- **Two-Table Normalized Design**: Separates game-level and player-level data for efficient searching
+- **Expected Scale**: 10k-100k games (20k-400k player records)
+- **Games Table** (`games`): One row per game
   - `id` (String, CUID) - Primary key
-  - `game_id` (Integer, unique, indexed) - BGA game identifier
-  - `game_log` (JSONB) - Full JSON from BGA API
-  - Preprocessed searchable fields (all indexed):
-    - `player_name` (String, nullable)
-    - `player_race` (String, nullable)
-    - `final_score` (Integer, nullable)
-    - `player_elo` (Integer, nullable)
-    - `game_date` (DateTime, nullable)
-    - `round_count` (Integer, nullable)
-    - `player_count` (Integer, nullable)
-    - `buildings_data` (JSONB, nullable) - Array of building actions
-  - `created_at` (DateTime) - Record creation timestamp
-  - `updated_at` (DateTime) - Record update timestamp
+  - `game_id` (Integer, unique, indexed) - BGA game table identifier
+  - `game_name` (String) - Game name ("gaiaproject")
+  - `player_count` (Integer, indexed) - Number of players (2-4)
+  - `winner_name` (String, indexed) - Name of winning player
+  - `min_player_elo` (Integer, indexed) - Minimum ELO among all players in game
+  - `raw_game_log` (JSONB) - Complete parsed game data from parser
+- **Players Table** (`players`): One row per player per game
+  - `id` (String, CUID) - Primary key
+  - `game_id` (String, FK to games.id) - Foreign key with CASCADE delete
+  - `player_id` (Integer) - BGA player ID
+  - `player_name` (String, indexed) - Player display name
+  - `race_id` (Integer, indexed) - Race ID (1-14)
+  - `race_name` (String, indexed) - Race name (Terrans, Lantids, etc.)
+  - `final_score` (Integer, indexed) - Final score
+  - `player_elo` (Integer, indexed) - Player's ELO after this game
+  - `is_winner` (Boolean, indexed) - True if this player won
+  - `buildings_data` (JSONB, GIN indexed) - Buildings by round: `{"buildings": [[4,5], [6], [7]]}`
+  - Composite indexes: `(race_id, final_score)`, `(game_id, race_id)`, `(player_elo, final_score)`
+
+### Database Performance & Scale
+- **Expected storage**: ~1 GB for 100k games
+  - Games table: ~100k × 1KB = 100MB
+  - Players table: ~400k × 2KB = 800MB
+  - Indexes: ~200-300MB
+- **Query performance expectations**:
+  - Player name/race/ELO searches: <1ms (B-tree indexes)
+  - Building searches: 10-50ms (GIN index on JSONB)
+  - Complex multi-condition queries: 50-200ms worst case
+  - Most queries: <10ms
+- **Index strategy**:
+  - Single-column B-tree indexes for exact matches and range queries
+  - Composite indexes for common query patterns
+  - GIN index for JSONB building data searches
+  - Foreign key index for game-player JOINs
 
 ### Data Flow
 1. User authenticates with BGA credentials
-2. API fetches game data (JSON logs) from BGA
-3. Parser extracts searchable fields from JSON
-4. Both raw JSON and preprocessed data stored in PostgreSQL
-5. Search queries use indexed preprocessed fields for fast results
+2. API fetches game list using `getPlayerFinishedGames()`
+3. For each game, fetch detailed log using `getGameLog()`
+4. Parser extracts searchable fields and player data from JSON
+5. Storage helper creates one game record + multiple player records in transaction
+6. Search queries use "any player" pattern with indexed fields for fast results
+7. Complex building queries use GIN index on JSONB buildings_data
 
 ## Project Structure
 
@@ -75,7 +98,11 @@ bga_gaia_parser/
 │   ├── components/            # React components
 │   ├── lib/                   # Utility functions
 │   │   ├── bga-client.ts     # BGA API client
+│   │   ├── bga-types.ts      # BGA API TypeScript types
 │   │   ├── game-parser.ts    # JSON parsing logic
+│   │   ├── gaia-constants.ts # Race/building/event type mappings
+│   │   ├── game-storage.ts   # Database storage helpers
+│   │   ├── building-query.ts # Complex query helpers
 │   │   └── db.ts             # Prisma client
 │   └── types/                 # TypeScript types
 ├── prisma/
@@ -200,10 +227,13 @@ npm run db:generate   # Generate Prisma Client
 
 **Phase 2: Backend & Database Setup** (✅ COMPLETE)
 - ✅ **Prisma Setup**: Installed `@prisma/client` and `prisma` packages
-- ✅ **Database Schema**: Created `prisma/schema.prisma` with Game model
-  - Fields: `id`, `game_id` (unique), `game_log` (JSONB), searchable fields, timestamps
-  - Indexes: `player_race`, `player_name`, `final_score`, `player_elo`, `game_date`
-  - Migration: `20260204133634_init` applied successfully
+- ✅ **Database Schema**: Two-table normalized design
+  - **Games table**: One row per game with metadata
+  - **Players table**: One row per player per game (4-player game = 4 rows)
+  - Migration: `20260205121225_redesign_schema_two_tables` applied successfully
+  - **17 indexes total**: 5 on games, 12 on players (including GIN index for JSONB)
+  - Removed unused fields: roundCount, gameDate, createdAt, updatedAt
+  - Added: `minPlayerElo` for fast skill-level filtering
 - ✅ **Docker Compose**: Created `docker-compose.yml` with PostgreSQL 16 Alpine
   - Container: `bga_gaia_postgres`
   - Database: `bga_gaia_db` (user: `bga_user`)
@@ -237,54 +267,140 @@ npm run db:generate   # Generate Prisma Client
   - Complete race ID mapping (1-14: Terrans, Lantids, Xenos, etc.)
   - Complete building ID mapping (4-9: Mine, Trading Station, Research Lab, etc.)
   - Handles event types: `notifyChooseRace`, `notifyBuild`, `notifyUpgrade`, `notifyRoundEnd`
+- ✅ **Game Storage Helpers**: Database storage and retrieval functions
+  - Created `src/lib/game-storage.ts` - Storage helper functions
+    - `storeGame()` - Store parsed game and all players in transaction
+    - `gameExists()` - Check if game already in database
+    - `getGame()` - Retrieve game with all players
+  - Handles ELO mapping from BGA API data
+  - Calculates `minPlayerElo` automatically
+  - Sets `isWinner` flag for winning player
+- ✅ **Query Helpers**: Complex search query builders
+  - Created `src/lib/building-query.ts` - Building query helpers
+    - `buildPlayerQuery()` - Basic player filtering
+    - `generateBuildingSQL()` - Raw SQL for JSONB building searches
+    - `buildGameWhereCondition()` - Multi-condition OR queries
+  - Supports "any player" search pattern
+  - Handles complex race + building + round combinations
 - ✅ **Documentation**:
   - `docs/BGA_API.md` - Complete API reference with examples
   - `docs/GAME_LOG_STRUCTURE.md` - Detailed log structure and parsing strategy
-  - Test scripts in `scripts/` directory for verification
+- ✅ **Test Scripts**: Verification and testing scripts
+  - `scripts/test-storage.ts` - Verify game storage works correctly
+  - `scripts/test-queries.ts` - Test all search query patterns
+  - `scripts/test-parser.ts` - Test game log parsing
+  - `scripts/test-game-log.ts` - Test game log fetching
+  - All tests passing with real BGA data
 
-**BGA API Flow:**
-1. `initialize()` - Fetches homepage and extracts request token
-2. `login(username, password)` - Authenticates with credentials
-3. `getPlayerFinishedGames(playerId, gameId, page)` - Fetch game list (paginated)
-4. `getGameLog(tableId)` - Fetch detailed log for specific game
+**Complete Data Collection Flow:**
+1. `BGAClient.initialize()` - Fetches homepage and extracts request token
+2. `BGAClient.login(username, password)` - Authenticates with credentials
+3. `BGAClient.getPlayerFinishedGames(playerId, gameId, page)` - Fetch game list (paginated, 10 per page)
+4. `BGAClient.getGameLog(tableId)` - Fetch detailed log for specific game
 5. `GameLogParser.parseGameLog(gameTable, log)` - Parse log into searchable data
+6. `storeGame(parsedGame, gameTableInfo)` - Store in database (1 game + N players)
 
 ### 🚧 Pending Work
 
-**Phase 3: Search Functionality**
-1. Create search API endpoint that uses multiple conditions
+**Phase 3: Search Functionality** (Ready to implement)
+1. Create search API endpoint (`/api/search/route.ts`)
+   - Accept search criteria from frontend
+   - Build Prisma queries using query helpers
+   - Handle complex building searches with raw SQL
 2. Integrate search API with frontend UI
 3. Replace mock data with real database queries
+4. Test all search filter combinations
 
-**Phase 4: Data Collection**
+**Phase 4: Data Collection** (Ready to implement)
 1. Create data collection API endpoints
-   - `/api/collect/player-games` - Collect and parse games for a player
-   - Store parsed data in PostgreSQL
-2. Implement pagination logic to avoid fetching duplicate games
+   - `/api/collect/games/route.ts` - Collect and parse games for a player
+   - Use `storeGame()` helper to save parsed data
+   - Skip games that already exist with `gameExists()`
+2. Implement pagination logic to collect all player games
 3. Build admin interface for triggering data collection
+   - Simple form with BGA credentials + player ID
+   - Progress tracking during collection
+   - Display collected game count
 
 **Phase 5: Production Deployment**
 1. Create Dockerfile for production
 2. Test end-to-end workflow (collect → store → search)
 3. Deploy to Vercel with PostgreSQL database
+4. Set up environment variables for production
 
 ### Important Implementation Notes
 
 **Search Filter Architecture**:
-- Single filters (winner, player ELO) can only have one value
+- **Search Pattern**: "Find games where ANY player matches conditions"
+  - Uses Prisma's `players: { some: { ... } }` pattern
+  - Returns entire games, not individual player performances
+- Single filters (winner race, minimum player ELO) can only have one value
 - Multiple filters support adding multiple conditions of the same type
 - Conditions are stored in separate state arrays and displayed as removable chips
-- Future: Multiple conditions will be combined with OR logic in search queries
+- Multiple conditions within same filter type use OR logic
+- Different filter types use AND logic
+- All searches leverage indexed fields for fast results
 
 **Player ELO System**:
 - Users can select from preset levels (Beginner=0, Apprentice=1, Average=100, Good=200, Strong=300, Expert=500, Master=700)
 - Or manually enter any numeric ELO value
 - Dropdown and manual input are synchronized - changing one resets the other
+- **Minimum Player ELO Filter**: Precomputed field in games table
+  - Stores the minimum ELO among all players in the game
+  - Enables fast filtering: "Find games where even the weakest player had ELO ≥ X"
+  - Calculated automatically during game storage
+  - Indexed for sub-millisecond queries
 
 **Fraction Config Filter**:
 - Combines Race + Structure + Built in Round (max) into one condition
 - Can add conditions with just race, just structure, or any combination
 - Displays as chips: "Terrans: Mine (round ≤ 3)"
+
+**Search Query Patterns**:
+The two-table design enables efficient "find games where ANY player did X" searches:
+
+```typescript
+// Example 1: Player name search
+const games = await prisma.game.findMany({
+  where: {
+    players: { some: { playerName: { contains: 'Alice' } } }
+  },
+  include: { players: true }
+});
+
+// Example 2: Race + Score combination
+const games = await prisma.game.findMany({
+  where: {
+    players: { some: { raceId: 1, finalScore: { gte: 150 } } }
+  },
+  include: { players: true }
+});
+
+// Example 3: Winner + Minimum ELO
+const games = await prisma.game.findMany({
+  where: {
+    AND: [
+      { players: { some: { isWinner: true, raceId: 4 } } },
+      { minPlayerElo: { gte: 300 } }
+    ]
+  },
+  include: { players: true }
+});
+
+// Example 4: Building query (requires raw SQL)
+const games = await prisma.$queryRaw`
+  SELECT DISTINCT g.*
+  FROM games g
+  JOIN players p ON p.game_id = g.id
+  WHERE p.race_id = 1
+    AND EXISTS (
+      SELECT 1
+      FROM jsonb_array_elements(p.buildings_data->'buildings')
+      WITH ORDINALITY AS round(buildings, round_num)
+      WHERE round_num <= 4 AND buildings ? '6'
+    )
+`;
+```
 
 **Parsed Game Data Structure**:
 ```typescript
