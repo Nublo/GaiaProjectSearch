@@ -45,6 +45,11 @@ async function testParser() {
     console.log(`   Scores: ${recentGame.scores}`);
     console.log('');
 
+    // Fetch table info for ELO ratings
+    console.log(`🎯 Fetching table info for ELO ratings...`);
+    const tableInfo = await client.getTableInfo(recentGame.table_id);
+    console.log('✅ Table info fetched\n');
+
     // Fetch the game log
     console.log(`🎯 Fetching game log...`);
     const logResponse = await client.getGameLog(recentGame.table_id);
@@ -53,7 +58,7 @@ async function testParser() {
     // Parse the game log
     console.log('⚙️  Parsing game log...');
     console.log('');
-    const parsedGame = GameLogParser.parseGameLog(recentGame, logResponse);
+    const parsedGame = GameLogParser.parseGameLog(recentGame, logResponse, tableInfo);
     console.log('');
     console.log('✅ Parsing completed\n');
 
@@ -67,6 +72,7 @@ async function testParser() {
     console.log(`Game: ${parsedGame.gameName} (ID: ${parsedGame.gameId})`);
     console.log(`Players: ${parsedGame.playerCount}`);
     console.log(`Winner: ${parsedGame.winnerName}`);
+    console.log(`Min Player ELO: ${parsedGame.minPlayerElo ?? 'N/A'}`);
     console.log('');
 
     // Display player info with buildings
@@ -76,6 +82,7 @@ async function testParser() {
         `${index + 1}. ${player.playerName} - ${player.raceName} (Race ${player.raceId})`
       );
       console.log(`   Score: ${player.finalScore} points`);
+      console.log(`   ELO: ${player.playerElo ?? 'N/A'}`);
 
       // Count total buildings
       const totalBuildings = player.buildings.reduce((sum, round) => sum + round.length, 0);

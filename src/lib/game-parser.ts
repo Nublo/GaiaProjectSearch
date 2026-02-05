@@ -12,7 +12,14 @@ import {
   getRaceName,
   getBuildingName,
 } from './gaia-constants';
-import { GetGameLogResponse, GameTableInfo } from './bga-types';
+import { GetGameLogResponse, GameTableInfo, GetTableInfoResponse } from './bga-types';
+
+/**
+ * BGA ELO offset - BGA's ELO system was redesigned and now displays ratings
+ * with 1300 subtracted from the raw stored value. We normalize to match
+ * what users see in the BGA interface.
+ */
+const BGA_ELO_OFFSET = 1300;
 
 // ============================================================================
 // PARSED GAME DATA
@@ -26,7 +33,8 @@ export interface ParsedGameData {
 
   // Players and races (includes building data)
   playerCount: number;
-  winnerName: string; // Name of the winning player,
+  winnerName: string; // Name of the winning player
+  minPlayerElo: number | null; // Minimum ELO among all players (normalized)
   players: PlayerRaceMapping[];
 
   // Raw data for future parsing
@@ -43,10 +51,23 @@ export class GameLogParser {
    */
   static parseGameLog(
     gameTable: GameTableInfo,
-    logResponse: GetGameLogResponse
+    logResponse: GetGameLogResponse,
+    tableInfo: GetTableInfoResponse
   ): ParsedGameData {
     const logs = logResponse.data.logs;
     const players: PlayerRaceMapping[] = [];
+
+    // Extract and normalize player ELO data from table info
+    const playerEloMap = new Map<number, number>();
+    tableInfo.data.result.player.forEach((playerResult) => {
+      const playerId = parseInt(playerResult.player_id);
+      const rawElo = parseFloat(playerResult.rank_after_game);
+      if (!isNaN(rawElo)) {
+        // Normalize ELO by subtracting BGA offset (1300)
+        const normalizedElo = Math.round(rawElo - BGA_ELO_OFFSET);
+        playerEloMap.set(playerId, normalizedElo);
+      }
+    });
 
     let currentRound = 0;
 
@@ -77,6 +98,7 @@ export class GameLogParser {
             raceId,
             raceName: getRaceName(raceId),
             finalScore: 0, // Will be updated when parsing game end
+            playerElo: playerEloMap.get(playerId) || null, // Get normalized ELO from table info
             buildings: [], // Will be populated as buildings are built
           });
 
@@ -170,6 +192,12 @@ export class GameLogParser {
       winnerName = winner.playerName;
     }
 
+    // Calculate minimum player ELO
+    const playerElos = players
+      .map(p => p.playerElo)
+      .filter((elo): elo is number => elo !== null);
+    const minPlayerElo = playerElos.length > 0 ? Math.min(...playerElos) : null;
+
     // Build the parsed data object
     const parsedData: ParsedGameData = {
       tableId: gameTable.table_id,
@@ -178,6 +206,7 @@ export class GameLogParser {
       playerCount: players.length,
       players,
       winnerName,
+      minPlayerElo,
       rawLog: logResponse,
     };
 

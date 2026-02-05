@@ -101,12 +101,12 @@ async function testStorage() {
 
     // Parse the game log
     console.log('⚙️  Parsing game log...');
-    const parsedGame = GameLogParser.parseGameLog(gameTableInfo, logResponse);
+    const parsedGame = GameLogParser.parseGameLog(gameTableInfo, logResponse, tableInfo);
     console.log('✅ Parsing completed\n');
 
     // Store in database
     console.log('💾 Storing game in database...');
-    const storedGame = await storeGame(parsedGame, tableInfo);
+    const storedGame = await storeGame(parsedGame);
     console.log('✅ Game stored successfully\n');
 
     // Display stored data

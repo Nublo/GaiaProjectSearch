@@ -140,6 +140,7 @@ export interface PlayerRaceMapping {
   raceId: number;
   raceName: string;
   finalScore: number;
+  playerElo: number | null; // Normalized ELO (with BGA offset subtracted)
   buildings: number[][]; // buildings[round] = [buildingId1, buildingId2, ...]
 }
 
