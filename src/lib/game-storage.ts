@@ -11,7 +11,8 @@ export async function storeGame(parsedGame: ParsedGameData) {
   // Create game and players in a transaction
   const game = await prisma.game.create({
     data: {
-      gameId: parseInt(parsedGame.tableId),
+      tableId: parseInt(parsedGame.tableId),
+      gameId: parsedGame.gameId.toString(),
       gameName: parsedGame.gameName,
       playerCount: parsedGame.playerCount,
       winnerName: parsedGame.winnerName,
@@ -46,12 +47,12 @@ export async function storeGame(parsedGame: ParsedGameData) {
 /**
  * Check if a game already exists in the database.
  *
- * @param gameId - BGA game table ID
+ * @param tableId - BGA table ID (unique game instance identifier)
  * @returns True if game exists, false otherwise
  */
-export async function gameExists(gameId: number): Promise<boolean> {
+export async function gameExists(tableId: number): Promise<boolean> {
   const game = await prisma.game.findUnique({
-    where: { gameId }
+    where: { tableId }
   });
   return game !== null;
 }
@@ -59,12 +60,12 @@ export async function gameExists(gameId: number): Promise<boolean> {
 /**
  * Get a game and all its players from the database.
  *
- * @param gameId - BGA game table ID
+ * @param tableId - BGA table ID (unique game instance identifier)
  * @returns The game with all players, or null if not found
  */
-export async function getGame(gameId: number) {
+export async function getGame(tableId: number) {
   return await prisma.game.findUnique({
-    where: { gameId },
+    where: { tableId },
     include: { players: true }
   });
 }

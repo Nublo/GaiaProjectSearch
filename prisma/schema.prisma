@@ -18,7 +18,8 @@ datasource db {
 // ============================================================================
 model Game {
   id           String   @id @default(cuid())
-  gameId       Int      @unique @map("game_id")
+  tableId      Int      @unique @map("table_id") // BGA table ID (unique per game instance)
+  gameId       String   @default("1495") @map("game_id") // BGA game type ID (1495 = Gaia Project)
   gameName     String   @default("gaiaproject") @map("game_name")
 
   // Game metadata
@@ -47,8 +48,8 @@ model Player {
   id           String   @id @default(cuid())
 
   // Foreign key to game
-  gameId       String   @map("game_id")
-  game         Game     @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  tableId      String   @map("table_id")
+  game         Game     @relation(fields: [tableId], references: [id], onDelete: Cascade)
 
   // Player identification
   playerId     Int      @map("player_id")
@@ -74,12 +75,12 @@ model Player {
   @@index([raceName])
   @@index([finalScore])
   @@index([playerElo])
-  @@index([gameId])
+  @@index([tableId])
   @@index([isWinner])
 
   // Composite indexes for common query patterns
   @@index([raceId, finalScore])
-  @@index([gameId, raceId])
+  @@index([tableId, raceId])
   @@index([playerElo, finalScore])
 
   @@map("players")

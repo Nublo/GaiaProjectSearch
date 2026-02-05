@@ -47,17 +47,17 @@ async function testStorage() {
     console.log('');
 
     // Check if game already exists
-    const gameId = parseInt(gameTableInfo.table_id);
-    const exists = await gameExists(gameId);
+    const tableId = parseInt(gameTableInfo.table_id);
+    const exists = await gameExists(tableId);
 
     if (exists) {
-      console.log(`⚠️  Game ${gameId} already exists in database`);
+      console.log(`⚠️  Game ${tableId} already exists in database`);
       console.log('   Retrieving existing game...\n');
 
-      const existingGame = await getGame(gameId);
+      const existingGame = await getGame(tableId);
       if (existingGame) {
         console.log('📊 Existing Game Data:');
-        console.log(`   Game ID: ${existingGame.gameId}`);
+        console.log(`   Table ID: ${existingGame.tableId}`);
         console.log(`   Winner: ${existingGame.winnerName}`);
         console.log(`   Player Count: ${existingGame.playerCount}`);
         console.log(`   Min Player ELO: ${existingGame.minPlayerElo}`);
@@ -116,6 +116,7 @@ async function testStorage() {
     console.log('');
 
     console.log(`Database ID: ${storedGame.id}`);
+    console.log(`Table ID: ${storedGame.tableId}`);
     console.log(`Game ID: ${storedGame.gameId}`);
     console.log(`Game Name: ${storedGame.gameName}`);
     console.log(`Player Count: ${storedGame.playerCount}`);
@@ -143,10 +144,10 @@ async function testStorage() {
 
     // Verify retrieval
     console.log('🔍 Verifying retrieval...');
-    const retrievedGame = await getGame(storedGame.gameId);
+    const retrievedGame = await getGame(storedGame.tableId);
     if (retrievedGame) {
       console.log(
-        `✅ Successfully retrieved game ${retrievedGame.gameId} with ${retrievedGame.players.length} players`
+        `✅ Successfully retrieved game ${retrievedGame.tableId} with ${retrievedGame.players.length} players`
       );
     } else {
       console.log('❌ Failed to retrieve stored game');
