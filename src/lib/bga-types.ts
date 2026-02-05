@@ -87,3 +87,56 @@ export interface GetGameLogResponse {
     [key: string]: any; // Other fields we'll discover
   };
 }
+
+export interface TableInfoPlayerResult {
+  player_id: string;
+  score: string;
+  score_aux: string;
+  gamerank: string; // "1" = winner, "2" = second place, etc.
+  is_tie: string;
+  point_win: string; // ELO change (can be negative)
+  rank_after_game: string; // Player's ELO after this game
+  finish_game: string;
+  arena_points_win: string | null;
+  arena_after_game: string | null;
+  name: string;
+  avatar: string;
+  gender: string | null;
+  country: {
+    name: string;
+    cur: string;
+    code: string;
+    flag_x: number;
+    flag_y: number;
+  };
+  is_premium: string;
+  is_beginner: string;
+  th_name: string | null;
+}
+
+export interface GetTableInfoResponse {
+  status: number;
+  data: {
+    id: string; // Table ID
+    game_id: string;
+    game_name: string;
+    status: string; // "archive" for finished games
+    result: {
+      id: string;
+      time_start: string;
+      time_end: string;
+      time_duration: string;
+      table_level: string;
+      game_id: string;
+      concede: string;
+      endgame_reason: string;
+      game_name: string;
+      player: TableInfoPlayerResult[]; // Array of players with ELO data
+      penalties: Record<string, { leave: number; clock: number }>;
+      is_solo: boolean;
+      stats: any; // Game statistics (masked for privacy)
+      trophies: any[];
+    };
+    [key: string]: any; // Other fields
+  };
+}

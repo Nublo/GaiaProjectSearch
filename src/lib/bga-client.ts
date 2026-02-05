@@ -1,4 +1,4 @@
-import { BGAConfig, LoginResponse, BGASession, GetPlayerFinishedGamesResponse, GetGameLogResponse } from './bga-types';
+import { BGAConfig, LoginResponse, BGASession, GetPlayerFinishedGamesResponse, GetGameLogResponse, GetTableInfoResponse } from './bga-types';
 
 export class BGAClient {
   private session: BGASession;
@@ -319,6 +319,60 @@ export class BGAClient {
       return logResponse;
     } catch (error) {
       console.error('[BGAClient] Failed to fetch game log:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Fetch detailed table information including player ELO ratings
+   *
+   * @param tableId - BGA table ID (from GameTableInfo.table_id)
+   * @returns Response containing detailed table information with all players' ELO ratings
+   *
+   * @example
+   * const tableInfo = await client.getTableInfo('801274027');
+   * console.log('Player ELOs:', tableInfo.data.player);
+   */
+  async getTableInfo(tableId: string): Promise<GetTableInfoResponse> {
+    if (!this.isLoggedIn()) {
+      throw new Error('Not logged in. Call login() first.');
+    }
+
+    console.log(`[BGAClient] Fetching table info for table_id=${tableId}`);
+
+    try {
+      // Build query parameters
+      const params = new URLSearchParams({
+        id: tableId,
+        'dojo.preventCache': Date.now().toString(),
+      });
+
+      const url = `${this.baseUrl}/table/table/tableinfos.html?${params.toString()}`;
+
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'User-Agent':
+            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:146.0) Gecko/20100101 Firefox/146.0',
+          Accept: '*/*',
+          'Accept-Language': 'en-GB,en;q=0.5',
+          'X-Request-Token': this.session.requestToken,
+          Referer: `${this.baseUrl}/gamereview?table=${tableId}`,
+          Cookie: this.getCookieHeader(),
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch table info: ${response.status} ${response.statusText}`);
+      }
+
+      const tableInfoResponse = await response.json();
+
+      console.log(`[BGAClient] Successfully fetched table info`);
+
+      return tableInfoResponse;
+    } catch (error) {
+      console.error('[BGAClient] Failed to fetch table info:', error);
       throw error;
     }
   }

@@ -1,25 +1,42 @@
 import { prisma } from './db';
 import { ParsedGameData } from './game-parser';
-import { GameTableInfo } from './bga-types';
+import { GetTableInfoResponse } from './bga-types';
+
+/**
+ * BGA ELO offset - BGA's ELO system was redesigned and now displays ratings
+ * with 1300 subtracted from the raw stored value. We normalize to match
+ * what users see in the BGA interface.
+ */
+const BGA_ELO_OFFSET = 1300;
 
 /**
  * Store a parsed game and all its players in the database.
  *
  * @param parsedGame - The parsed game data from GameLogParser
- * @param gameTableInfo - The game table info from BGA API (contains ELO data)
+ * @param tableInfo - The table info response from BGA API (contains ELO data for all players)
  * @returns The created game with all players
  */
 export async function storeGame(
   parsedGame: ParsedGameData,
-  gameTableInfo: GameTableInfo
+  tableInfo: GetTableInfoResponse
 ) {
-  // Parse BGA data
-  const eloValues = gameTableInfo.elo_after.split(',').map(Number);
-  const playerIds = gameTableInfo.players.split(',').map(Number);
+  // Extract player ELO data from table info
+  const playerEloMap = new Map<number, number>();
+
+  tableInfo.data.result.player.forEach((playerResult) => {
+    const playerId = parseInt(playerResult.player_id);
+    const rawElo = parseFloat(playerResult.rank_after_game);
+    if (!isNaN(rawElo)) {
+      // Normalize ELO by subtracting BGA offset (1300)
+      // This matches what users see in BGA interface
+      const normalizedElo = Math.round(rawElo - BGA_ELO_OFFSET);
+      playerEloMap.set(playerId, normalizedElo);
+    }
+  });
 
   // Find minimum ELO among all players
-  const validElos = eloValues.filter(elo => elo > 0);
-  const minPlayerElo = validElos.length > 0 ? Math.min(...validElos) : null;
+  const allElos = Array.from(playerEloMap.values());
+  const minPlayerElo = allElos.length > 0 ? Math.min(...allElos) : null;
 
   // Create game and players in a transaction
   const game = await prisma.game.create({
@@ -33,9 +50,8 @@ export async function storeGame(
 
       players: {
         create: parsedGame.players.map((player) => {
-          // Find corresponding ELO for this player
-          const playerIndex = playerIds.indexOf(player.playerId);
-          const playerElo = playerIndex >= 0 ? eloValues[playerIndex] : null;
+          // Get ELO for this player from the map
+          const playerElo = playerEloMap.get(player.playerId) || null;
 
           return {
             playerId: player.playerId,

@@ -79,6 +79,21 @@ async function testStorage() {
       return;
     }
 
+    // Fetch table info for ELO ratings
+    console.log(`🎯 Fetching table info for ELO ratings...`);
+    const tableInfo = await client.getTableInfo(gameTableInfo.table_id);
+    console.log('✅ Table info fetched\n');
+
+    // Display player ELO data
+    console.log('📊 Player ELO Ratings (Raw → Normalized):');
+    tableInfo.data.result.player.forEach((player) => {
+      const rawElo = parseFloat(player.rank_after_game);
+      const normalizedElo = Math.round(rawElo - 1300); // BGA ELO offset
+      const eloChange = player.point_win;
+      console.log(`   ${player.name}: ${rawElo} → ${normalizedElo} (${eloChange > 0 ? '+' : ''}${eloChange})`);
+    });
+    console.log('');
+
     // Fetch the game log
     console.log(`🎯 Fetching game log...`);
     const logResponse = await client.getGameLog(gameTableInfo.table_id);
@@ -91,7 +106,7 @@ async function testStorage() {
 
     // Store in database
     console.log('💾 Storing game in database...');
-    const storedGame = await storeGame(parsedGame, gameTableInfo);
+    const storedGame = await storeGame(parsedGame, tableInfo);
     console.log('✅ Game stored successfully\n');
 
     // Display stored data
