@@ -89,31 +89,42 @@ This is a web application designed with the following deployment requirements:
 ```
 bga_gaia_parser/
 ├── src/
-│   ├── app/                    # Next.js App Router
-│   │   ├── page.tsx           # Home/search interface
-│   │   ├── games/[id]/        # Game detail pages
-│   │   └── api/               # API routes
-│   │       ├── auth/          # BGA authentication
-│   │       ├── collect/       # Data collection endpoints
-│   │       └── search/        # Search endpoints
-│   ├── components/            # React components
-│   ├── lib/                   # Utility functions
-│   │   ├── bga-client.ts     # BGA API client (Playwright-based)
-│   │   ├── bga-types.ts      # BGA API TypeScript types
-│   │   ├── game-collector.ts # Automated game collection with rate limit handling
-│   │   ├── game-parser.ts    # JSON parsing logic
-│   │   ├── gaia-constants.ts # Race/building/event type mappings
-│   │   ├── game-storage.ts   # Database storage helpers
-│   │   ├── building-query.ts # Complex query helpers
-│   │   └── db.ts             # Prisma client
-│   └── types/                 # TypeScript types
+│   ├── app/                        # Next.js App Router
+│   │   ├── page.tsx               # Home page — search form only
+│   │   ├── results/
+│   │   │   └── page.tsx           # Search results page (server-rendered, ?q= param)
+│   │   ├── api/
+│   │   │   ├── search/
+│   │   │   │   └── route.ts       # POST /api/search — thin wrapper over searchGames()
+│   │   │   └── players/
+│   │   │       └── route.ts       # GET /api/players — distinct player names for autocomplete
+│   │   ├── layout.tsx             # Root layout with metadata ("Gaia Project Search")
+│   │   ├── favicon.ico            # Custom Gaia Project favicon
+│   │   ├── icon.png               # 512×512 PNG icon for modern browsers
+│   │   └── opengraph-image.png    # OG social sharing image
+│   ├── components/
+│   │   ├── SearchForm.tsx         # Search form with all filter types
+│   │   ├── SearchResults.tsx      # Results list + active-filters summary
+│   │   └── GameCard.tsx           # Single game card (all players, race badges, links)
+│   ├── lib/
+│   │   ├── search.ts             # searchGames() — shared search logic (Prisma + raw SQL)
+│   │   ├── bga-client.ts         # BGA API client (Playwright-based)
+│   │   ├── bga-types.ts          # BGA API TypeScript types
+│   │   ├── game-collector.ts     # Automated game collection with rate limit handling
+│   │   ├── game-parser.ts        # JSON parsing logic
+│   │   ├── gaia-constants.ts     # Race/building/event type mappings
+│   │   ├── game-storage.ts       # Database storage helpers
+│   │   ├── building-query.ts     # Complex query helpers
+│   │   └── db.ts                 # Prisma client singleton
+│   └── types/
+│       └── game.ts               # GameResult, PlayerResult, SearchRequest, etc.
 ├── scripts/
-│   ├── collect-player.ts      # CLI: collect games for a specific player
-│   └── collect-top10.ts       # CLI: collect games for top 10 ranked players
+│   ├── collect-player.ts          # CLI: collect games for a specific player
+│   └── collect-top10.ts           # CLI: collect games for top 10 ranked players
 ├── prisma/
-│   └── schema.prisma          # Database schema
-├── docker-compose.yml         # Local PostgreSQL setup
-└── Dockerfile                 # Production container
+│   └── schema.prisma              # Database schema
+├── docker-compose.yml             # Local PostgreSQL setup
+└── Dockerfile                     # Production container
 ```
 
 ## Development Commands
@@ -215,14 +226,13 @@ npm run db:generate   # Generate Prisma Client
 
 ### ✅ Completed
 
-**Phase 1: Project Initialization & UI Development**
+**Phase 1: Project Initialization & UI Development** (✅ COMPLETE)
 - ✅ Next.js 15 project initialized with TypeScript and Tailwind CSS
 - ✅ Complete search UI implemented with two sections:
   - **Single Filters**: Winner Race, Winning Player, Player ELO/Level (at least)
   - **Multiple Filters**: Fraction Config (Race + Structure + Round), Amount of Players, Player Name
 - ✅ Multi-condition system implemented - users can add multiple search conditions with visual chips
-- ✅ Mock data integration for UI testing (3 sample games)
-- ✅ TypeScript types defined for Game, SearchCriteria, and SearchResults
+- ✅ TypeScript types defined for GameResult, PlayerResult, SearchRequest, StructureCondition
 
 **UI Features Implemented**:
 - Search form with organized filter sections
@@ -377,22 +387,49 @@ BGA_USERNAME=user2 BGA_PASSWORD=pass2 npx tsx scripts/collect-player.ts Nigator
   - Re-run the next day (or use multiple accounts) to continue
   - Game list pagination is NOT rate limited — only game log/replay views
 
+**Phase 3: Search Functionality** (✅ COMPLETE)
+- ✅ **Search Logic**: Extracted into `src/lib/search.ts` → `searchGames(req)` function
+  - Used by both the API route and the server-rendered results page (no duplication)
+  - Builds Prisma `AND` conditions for all filter types
+  - Race-only fraction conditions → Prisma ORM (`players: { some: { raceId } }`)
+  - Building conditions → raw SQL with `AND EXISTS` blocks per condition (JSONB array search via `@>` and `WITH ORDINALITY`)
+  - Early-exit when building SQL returns 0 matches (avoids a no-op Prisma query)
+  - Player name conditions use **AND** logic (all named players must appear in the same game)
+  - Player count conditions use **OR** logic (game matches any of the selected counts)
+- ✅ **API Route**: `POST /api/search` — thin wrapper over `searchGames()`
+- ✅ **Player Names API**: `GET /api/players` — returns all distinct player names from the DB for autocomplete
+- ✅ **Results Page**: `src/app/results/page.tsx` — server-rendered, reads `?q=<JSON>` URL param
+  - Search criteria serialized as JSON into the URL → bookmarkable, shareable, browser-back-works
+  - Results open in a **new browser tab** (`window.open(..., '_blank')`) so the search form stays open
+- ✅ **Active Filters Summary**: Shown at top of results page as labeled chips
+  - Displays all applied filters: winner fraction, min ELO, player counts, player names, fraction conditions
+  - "No filters applied" message when search has no criteria
+- ✅ **GameCard**: Shows all players per game
+  - Players sorted by final score descending (winner is always first)
+  - Race badges with per-faction colors: Terrans/Lantids=blue, Firacs/Bescods=black, Ivits/Hadsch Hallas=red, Bal T'aks/Geodens=orange, Gleens/Xenos=yellow, Itars/Nevlas=white, Ambas/Taklons=brown
+  - Player names link to BGA profile (`https://boardgamearena.com/player?id={playerId}`) in new tab
+  - "Watch BGA replay" link opens game on BGA in new tab
+  - Inline condition chips on matching player rows (e.g. `QIC Academy R2`) showing the **actual round** the structure was built — not the filter constraint
+  - `buildingsData` included in `PlayerResult` so matching is done client-side without extra round-trips
+- ✅ **Types**: Replaced old single-player `Game`/`SearchCriteria` with DB-aligned types
+  - `GameResult`, `PlayerResult` (includes `buildingsData`), `SearchRequest`, `StructureCondition`, `SearchResponse`
+- ✅ **Search Form UX**:
+  - Player name autocomplete: fetches all player names on mount, shows dropdown of up to 5 matches after 2+ characters typed
+  - Winning player autocomplete: same behaviour, uses same prefetched list
+  - AND/OR labels on each multi-filter section header (Fraction Config AND, Amount of Players OR, Player Name AND)
+  - Filter labels: "Winner Fraction" (was "Winner Race"), "Player ELO (min)" (was "Player ELO / Level (at least)")
+- ✅ **Branding**:
+  - Page title: "Gaia Project Search" (home) / "Search Results" (results page)
+  - Custom favicon, 512×512 icon, and OG image using Gaia Project box art
+  - Main search page shows only the search form (no title/subtitle)
+
 ### 🚧 Pending Work
 
-**Phase 3: Search Functionality** (Next priority)
-1. Create search API endpoint (`/api/search/route.ts`)
-   - Accept search criteria from frontend
-   - Build Prisma queries using query helpers
-   - Handle complex building searches with raw SQL
-2. Integrate search API with frontend UI
-3. Replace mock data with real database queries
-4. Test all search filter combinations
-
 **Phase 5: Production Deployment**
-1. Create Dockerfile for production
-2. Test end-to-end workflow (collect → store → search)
-3. Deploy to Vercel with PostgreSQL database
-4. Set up environment variables for production
+1. Test end-to-end workflow (collect → store → search) at scale
+2. Deploy to Vercel (Next.js) + managed PostgreSQL (Vercel Postgres or Neon)
+3. Set up environment variables for production
+4. Configure Dockerfile for containerized deployment if needed
 
 ### Important Implementation Notes
 
@@ -400,11 +437,13 @@ BGA_USERNAME=user2 BGA_PASSWORD=pass2 npx tsx scripts/collect-player.ts Nigator
 - **Search Pattern**: "Find games where ANY player matches conditions"
   - Uses Prisma's `players: { some: { ... } }` pattern
   - Returns entire games, not individual player performances
-- Single filters (winner race, minimum player ELO) can only have one value
-- Multiple filters support adding multiple conditions of the same type
-- Conditions are stored in separate state arrays and displayed as removable chips
-- Multiple conditions within same filter type use OR logic
-- Different filter types use AND logic
+- Single filters (Winner Fraction, Player ELO min) can only have one value
+- Multiple filters support adding multiple conditions of the same type, displayed as removable chips
+- **Condition logic per filter type**:
+  - Fraction Config → **AND**: every added condition must be satisfied (possibly by different players in the same game)
+  - Player Name → **AND**: every named player must appear in the game
+  - Amount of Players → **OR**: game must match any of the selected player counts
+- Different filter types always combine with AND logic
 - All searches leverage indexed fields for fast results
 
 **Player ELO System**:
@@ -420,7 +459,9 @@ BGA_USERNAME=user2 BGA_PASSWORD=pass2 npx tsx scripts/collect-player.ts Nigator
 **Fraction Config Filter**:
 - Combines Race + Structure + Built in Round (max) into one condition
 - Can add conditions with just race, just structure, or any combination
-- Displays as chips: "Terrans: Mine (round ≤ 3)"
+- Displays as chips in the search form: "Terrans: research lab (round ≤ 3)"
+- In search results, matching player rows show an inline green chip with the **actual** round built: e.g. `Research Lab R2`
+- Race-only conditions are not shown as inline chips (the race badge already identifies the fraction)
 
 **Search Query Patterns**:
 The two-table design enables efficient "find games where ANY player did X" searches:

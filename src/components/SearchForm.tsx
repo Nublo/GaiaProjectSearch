@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { SearchRequest, StructureCondition } from '@/types/game';
 
 interface FormState {
@@ -27,6 +27,32 @@ export default function SearchForm({ onSearch, isLoading = false }: SearchFormPr
   const [playerNameConditions, setPlayerNameConditions] = useState<string[]>([]);
   const [structureConditions, setStructureConditions] = useState<StructureCondition[]>([]);
   const [playerCountConditions, setPlayerCountConditions] = useState<number[]>([]);
+
+  // Player name autocomplete
+  const [allPlayerNames, setAllPlayerNames] = useState<string[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [showWinnerSuggestions, setShowWinnerSuggestions] = useState(false);
+
+  useEffect(() => {
+    fetch('/api/players')
+      .then((r) => r.json())
+      .then((names: string[]) => setAllPlayerNames(names))
+      .catch(() => {});
+  }, []);
+
+  const suggestions =
+    criteria.playerName && criteria.playerName.length >= 2
+      ? allPlayerNames
+          .filter((n) => n.toLowerCase().includes(criteria.playerName!.toLowerCase()))
+          .slice(0, 5)
+      : [];
+
+  const winnerSuggestions =
+    criteria.winnerPlayerName && criteria.winnerPlayerName.length >= 2
+      ? allPlayerNames
+          .filter((n) => n.toLowerCase().includes(criteria.winnerPlayerName!.toLowerCase()))
+          .slice(0, 5)
+      : [];
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -61,7 +87,7 @@ export default function SearchForm({ onSearch, isLoading = false }: SearchFormPr
           {/* Winner Race */}
           <div>
             <label htmlFor="winnerRace" className="block text-sm font-medium text-gray-700 mb-2">
-              Winner Race
+              Winner Fraction
             </label>
             <select
               id="winnerRace"
@@ -92,20 +118,44 @@ export default function SearchForm({ onSearch, isLoading = false }: SearchFormPr
             <label htmlFor="winnerPlayerName" className="block text-sm font-medium text-gray-700 mb-2">
               Winning Player
             </label>
-            <input
-              type="text"
-              id="winnerPlayerName"
-              value={criteria.winnerPlayerName || ''}
-              onChange={(e) => setCriteria({ ...criteria, winnerPlayerName: e.target.value || undefined })}
-              placeholder="Search by winner name"
-              className={inputClassName}
-            />
+            <div className="relative">
+              <input
+                type="text"
+                id="winnerPlayerName"
+                value={criteria.winnerPlayerName || ''}
+                onChange={(e) => {
+                  setCriteria({ ...criteria, winnerPlayerName: e.target.value || undefined });
+                  setShowWinnerSuggestions(true);
+                }}
+                onFocus={() => setShowWinnerSuggestions(true)}
+                onBlur={() => setTimeout(() => setShowWinnerSuggestions(false), 150)}
+                placeholder="Search by winner name"
+                className={inputClassName}
+                autoComplete="off"
+              />
+              {showWinnerSuggestions && winnerSuggestions.length > 0 && (
+                <ul className="absolute z-10 w-full bg-white border border-gray-200 rounded-md shadow-lg mt-1 overflow-hidden">
+                  {winnerSuggestions.map((name) => (
+                    <li
+                      key={name}
+                      onMouseDown={() => {
+                        setCriteria({ ...criteria, winnerPlayerName: name });
+                        setShowWinnerSuggestions(false);
+                      }}
+                      className="px-3 py-2 text-sm text-gray-800 hover:bg-blue-50 cursor-pointer"
+                    >
+                      {name}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
           </div>
 
           {/* Player ELO and Level - Combined Row */}
           <div className="md:col-span-2">
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Player ELO / Level (at least)
+              Player ELO (min)
             </label>
             <div className="flex gap-4">
               {/* Player Level Dropdown */}
@@ -176,7 +226,7 @@ export default function SearchForm({ onSearch, isLoading = false }: SearchFormPr
 
         {/* Fraction Config Section */}
         <div className="mb-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
-          <h4 className="text-xs font-semibold text-gray-600 mb-2 uppercase">Fraction Config</h4>
+          <h4 className="text-xs font-semibold text-gray-600 mb-2 uppercase">Fraction Config <span className="text-green-700">(AND)</span></h4>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label htmlFor="race" className="block text-sm font-medium text-gray-700 mb-2">
@@ -300,7 +350,7 @@ export default function SearchForm({ onSearch, isLoading = false }: SearchFormPr
 
         {/* Amount of Players Section */}
         <div className="mb-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
-          <h4 className="text-xs font-semibold text-gray-600 mb-2 uppercase">Amount of Players</h4>
+          <h4 className="text-xs font-semibold text-gray-600 mb-2 uppercase">Amount of Players <span className="text-yellow-700">(OR)</span></h4>
           <div className="flex gap-2">
             <select
               id="playerCount"
@@ -353,16 +403,40 @@ export default function SearchForm({ onSearch, isLoading = false }: SearchFormPr
 
         {/* Player Name Section */}
         <div className="mb-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
-          <h4 className="text-xs font-semibold text-gray-600 mb-2 uppercase">Player Name</h4>
+          <h4 className="text-xs font-semibold text-gray-600 mb-2 uppercase">Player Name <span className="text-green-700">(AND)</span></h4>
           <div className="flex gap-2">
-            <input
-              type="text"
-              id="playerName"
-              value={criteria.playerName || ''}
-              onChange={(e) => setCriteria({ ...criteria, playerName: e.target.value || undefined })}
-              placeholder="Search by player name"
-              className={inputClassName}
-            />
+            <div className="relative flex-1">
+              <input
+                type="text"
+                id="playerName"
+                value={criteria.playerName || ''}
+                onChange={(e) => {
+                  setCriteria({ ...criteria, playerName: e.target.value || undefined });
+                  setShowSuggestions(true);
+                }}
+                onFocus={() => setShowSuggestions(true)}
+                onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
+                placeholder="Search by player name"
+                className="w-full h-10 px-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                autoComplete="off"
+              />
+              {showSuggestions && suggestions.length > 0 && (
+                <ul className="absolute z-10 w-full bg-white border border-gray-200 rounded-md shadow-lg mt-1 overflow-hidden">
+                  {suggestions.map((name) => (
+                    <li
+                      key={name}
+                      onMouseDown={() => {
+                        setCriteria({ ...criteria, playerName: name });
+                        setShowSuggestions(false);
+                      }}
+                      className="px-3 py-2 text-sm text-gray-800 hover:bg-blue-50 cursor-pointer"
+                    >
+                      {name}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
             <button
               type="button"
               onClick={() => {

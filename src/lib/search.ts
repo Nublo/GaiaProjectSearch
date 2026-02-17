@@ -49,11 +49,9 @@ export async function searchGames(req: SearchRequest): Promise<GameResult[]> {
     andConditions.push({ playerCount: { in: playerCounts } });
   }
 
-  if (playerNames.length > 0) {
+  for (const name of playerNames) {
     andConditions.push({
-      OR: playerNames.map((name) => ({
-        players: { some: { playerName: { contains: name, mode: 'insensitive' } } },
-      })),
+      players: { some: { playerName: { contains: name, mode: 'insensitive' } } },
     });
   }
 
@@ -131,12 +129,14 @@ export async function searchGames(req: SearchRequest): Promise<GameResult[]> {
       players: {
         select: {
           id: true,
+          playerId: true,
           playerName: true,
           raceId: true,
           raceName: true,
           finalScore: true,
           playerElo: true,
           isWinner: true,
+          buildingsData: true,
         },
       },
     },

@@ -11,12 +11,14 @@ export interface GameResult {
 
 export interface PlayerResult {
   id: string;
+  playerId: number;
   playerName: string;
   raceId: number;
   raceName: string;
   finalScore: number;
   playerElo?: number | null;
   isWinner: boolean;
+  buildingsData: { buildings: number[][] };
 }
 
 export interface SearchRequest {

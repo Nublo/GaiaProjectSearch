@@ -126,7 +126,11 @@ export default function SearchResults({ games, total, isLoading = false, searchR
 
         <div className="grid grid-cols-1 gap-4">
           {games.map((game) => (
-            <GameCard key={game.id} game={game} />
+            <GameCard
+              key={game.id}
+              game={game}
+              structureConditions={searchRequest?.structureConditions}
+            />
           ))}
         </div>
       </div>
