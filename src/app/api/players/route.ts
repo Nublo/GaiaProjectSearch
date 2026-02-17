@@ -8,7 +8,7 @@ export async function GET() {
       distinct: ['playerName'],
       orderBy: { playerName: 'asc' },
     });
-    return NextResponse.json(rows.map((r) => r.playerName));
+    return NextResponse.json(rows.map((r: { playerName: string }) => r.playerName));
   } catch (error) {
     console.error('Failed to fetch player names:', error);
     return NextResponse.json([], { status: 500 });
