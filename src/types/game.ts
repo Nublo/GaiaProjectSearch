@@ -6,6 +6,7 @@ export interface GameResult {
   playerCount: number;
   winnerName: string;
   minPlayerElo?: number | null;
+  finalScorings: number[];
   players: PlayerResult[];
 }
 
@@ -28,6 +29,7 @@ export interface SearchRequest {
   playerNames: string[];
   playerCounts: number[];
   structureConditions: StructureCondition[];
+  finalScorings?: number[];
 }
 
 export interface StructureCondition {

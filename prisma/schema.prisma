@@ -15,13 +15,15 @@ model Game {
   gameName     String   @default("gaiaproject") @map("game_name")
   playerCount  Int      @map("player_count")
   winnerName   String   @map("winner_name")
-  minPlayerElo Int?     @map("min_player_elo")
-  rawGameLog   Json     @map("raw_game_log")
-  players      Player[]
+  minPlayerElo  Int?     @map("min_player_elo")
+  finalScorings Int[]    @map("final_scorings")
+  rawGameLog    Json     @map("raw_game_log")
+  players       Player[]
 
   @@index([winnerName])
   @@index([playerCount])
   @@index([minPlayerElo])
+  @@index([finalScorings], map: "games_final_scorings_gin_idx", type: Gin)
   @@map("games")
 }
 

@@ -11,6 +11,7 @@ import {
   BuildingAction,
   getRaceName,
   getBuildingName,
+  FINAL_SCORING_DESC_TO_ID,
 } from './gaia-constants';
 import { GetGameLogResponse, GameTableInfo, GetTableInfoResponse } from './bga-types';
 
@@ -35,6 +36,7 @@ export interface ParsedGameData {
   playerCount: number;
   winnerName: string; // Name of the winning player
   minPlayerElo: number | null; // Minimum ELO among all players (normalized)
+  finalScorings: number[]; // IDs of the 2 active final scoring missions (1–6)
   players: PlayerRaceMapping[];
 
   // Raw data for future parsing
@@ -64,6 +66,7 @@ export class GameLogParser {
 
     const logs = logResponse.data.logs;
     const players: PlayerRaceMapping[] = [];
+    const finalScoringDescs = new Set<string>();
 
     // Extract and normalize player ELO data from table info
     const playerEloMap = new Map<number, number>();
@@ -162,6 +165,14 @@ export class GameLogParser {
           }
         }
 
+        // Collect final scoring mission types from notifyScore events
+        if (eventType === EventType.NOTIFY_SCORE) {
+          const desc = event.args?.desc;
+          if (desc && FINAL_SCORING_DESC_TO_ID[desc] !== undefined) {
+            finalScoringDescs.add(desc);
+          }
+        }
+
         // Parse building upgrades (notifyUpgrade events)
         if (eventType === EventType.NOTIFY_UPGRADE) {
           const args = event.args;
@@ -206,6 +217,12 @@ export class GameLogParser {
       .filter((elo): elo is number => elo !== null);
     const minPlayerElo = playerElos.length > 0 ? Math.min(...playerElos) : null;
 
+    // Map collected final scoring descs to IDs (sorted ascending)
+    const finalScorings = Array.from(finalScoringDescs)
+      .map((desc) => FINAL_SCORING_DESC_TO_ID[desc])
+      .filter((id): id is number => id !== undefined)
+      .sort((a, b) => a - b);
+
     // Build the parsed data object
     const parsedData: ParsedGameData = {
       tableId: gameTable.table_id,
@@ -215,6 +232,7 @@ export class GameLogParser {
       players,
       winnerName,
       minPlayerElo,
+      finalScorings,
       rawLog: logResponse,
     };
 

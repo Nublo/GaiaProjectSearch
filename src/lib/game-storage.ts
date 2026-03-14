@@ -21,6 +21,7 @@ export async function storeGame(parsedGame: ParsedGameData) {
         playerCount: parsedGame.playerCount,
         winnerName: parsedGame.winnerName,
         minPlayerElo: parsedGame.minPlayerElo,
+        finalScorings: parsedGame.finalScorings,
         rawGameLog: parsedGame as any,
       }
     });

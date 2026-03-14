@@ -24,6 +24,7 @@ export async function searchGames(req: SearchRequest): Promise<GameResult[]> {
     playerNames = [],
     playerCounts = [],
     structureConditions = [],
+    finalScorings = [],
   } = req;
 
   const andConditions: Prisma.GameWhereInput[] = [];
@@ -47,6 +48,10 @@ export async function searchGames(req: SearchRequest): Promise<GameResult[]> {
 
   if (playerCounts.length > 0) {
     andConditions.push({ playerCount: { in: playerCounts } });
+  }
+
+  for (const scoringId of finalScorings) {
+    andConditions.push({ finalScorings: { has: scoringId } });
   }
 
   for (const name of playerNames) {
@@ -126,6 +131,7 @@ export async function searchGames(req: SearchRequest): Promise<GameResult[]> {
       playerCount: true,
       winnerName: true,
       minPlayerElo: true,
+      finalScorings: true,
       players: {
         select: {
           id: true,

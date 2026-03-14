@@ -115,6 +115,45 @@ export enum EventType {
   // Building actions
   NOTIFY_BUILD = 'notifyBuild', // Building mines (structure 4)
   NOTIFY_UPGRADE = 'notifyUpgrade', // Upgrading to other structures
+
+  // Scoring
+  NOTIFY_SCORE = 'notifyScore', // Final scoring events (used to detect active final scoring missions)
+}
+
+// ============================================================================
+// FINAL SCORING MISSIONS
+// ============================================================================
+
+export enum FinalScoringType {
+  STRUCTURES_IN_FEDERATIONS = 1,
+  STRUCTURES = 2,
+  PLANET_TYPES = 3,
+  GAIA_PLANETS = 4,
+  SECTORS = 5,
+  SATELLITES = 6,
+}
+
+export const FINAL_SCORING_NAMES: Record<FinalScoringType, string> = {
+  [FinalScoringType.STRUCTURES_IN_FEDERATIONS]: 'Structures in Federations',
+  [FinalScoringType.STRUCTURES]: 'Structures',
+  [FinalScoringType.PLANET_TYPES]: 'Planet types',
+  [FinalScoringType.GAIA_PLANETS]: 'Gaia planets',
+  [FinalScoringType.SECTORS]: 'Sectors',
+  [FinalScoringType.SATELLITES]: 'Satellites',
+};
+
+// Maps the `desc` field from notifyScore events to FinalScoringType IDs
+export const FINAL_SCORING_DESC_TO_ID: Record<string, number> = {
+  'Most structures in federations': FinalScoringType.STRUCTURES_IN_FEDERATIONS,
+  'Most structures': FinalScoringType.STRUCTURES,
+  'Most planet types': FinalScoringType.PLANET_TYPES,
+  'Most Gaia planets': FinalScoringType.GAIA_PLANETS,
+  'Most map tiles': FinalScoringType.SECTORS,
+  'Most satellites': FinalScoringType.SATELLITES,
+};
+
+export function getFinalScoringName(id: number): string {
+  return FINAL_SCORING_NAMES[id as FinalScoringType] || `Unknown Scoring (${id})`;
 }
 
 // ============================================================================

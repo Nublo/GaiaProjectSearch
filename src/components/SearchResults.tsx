@@ -1,5 +1,6 @@
 import GameCard from './GameCard';
 import type { GameResult, SearchRequest, StructureCondition } from '@/types/game';
+import { getFinalScoringName } from '@/lib/gaia-constants';
 
 const STRUCTURE_LABELS: Record<string, string> = {
   'mine': 'Mine',
@@ -33,6 +34,8 @@ function SearchCriteriaSummary({ req }: { req: SearchRequest }) {
     chips.push({ label: 'Player', value: name });
   for (const cond of req.structureConditions)
     chips.push({ label: 'Fraction', value: formatStructureCondition(cond) });
+  for (const id of req.finalScorings ?? [])
+    chips.push({ label: 'Final Scoring', value: getFinalScoringName(id) });
 
   if (chips.length === 0) {
     return (
