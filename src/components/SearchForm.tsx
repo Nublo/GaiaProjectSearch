@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import type { SearchRequest, StructureCondition } from '@/types/game';
-import { FINAL_SCORING_NAMES } from '@/lib/gaia-constants';
+import { FINAL_SCORING_NAMES, getFinalScoringName } from '@/lib/gaia-constants';
 
 interface FormState {
   winnerRace?: string;
@@ -13,7 +14,6 @@ interface FormState {
   maxRound?: number;
   playerCount?: number;
   playerName?: string;
-  finalScoring?: number;
 }
 
 interface SearchFormProps {
@@ -222,59 +222,43 @@ export default function SearchForm({ onSearch, isLoading = false }: SearchFormPr
           {/* Final Scoring Mission */}
           <div className="md:col-span-2">
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Final Scoring Mission
+              Final Scoring Missions
             </label>
-            <div className="flex gap-2">
-              <select
-                value={criteria.finalScoring ?? ''}
-                onChange={(e) =>
-                  setCriteria({ ...criteria, finalScoring: e.target.value ? parseInt(e.target.value) : undefined })
-                }
-                className={inputClassName}
-              >
-                <option value="">Select scoring...</option>
-                {Object.entries(FINAL_SCORING_NAMES).map(([id, name]) => (
-                  <option key={id} value={id}>{name}</option>
-                ))}
-              </select>
-              <button
-                type="button"
-                onClick={() => {
-                  if (
-                    criteria.finalScoring !== undefined &&
-                    !finalScoringConditions.includes(criteria.finalScoring) &&
-                    finalScoringConditions.length < 2
-                  ) {
-                    setFinalScoringConditions([...finalScoringConditions, criteria.finalScoring]);
-                    setCriteria({ ...criteria, finalScoring: undefined });
-                  }
-                }}
-                className="px-4 h-10 bg-green-600 text-white rounded-md hover:bg-green-700 whitespace-nowrap"
-              >
-                Add
-              </button>
-            </div>
-            {finalScoringConditions.length > 0 && (
-              <div className="mt-2 flex flex-wrap gap-2">
-                {finalScoringConditions.map((id) => (
-                  <div
-                    key={id}
-                    className="inline-flex items-center gap-2 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm"
-                  >
-                    <span>{FINAL_SCORING_NAMES[id as keyof typeof FINAL_SCORING_NAMES]}</span>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setFinalScoringConditions(finalScoringConditions.filter((x) => x !== id))
+            <div className="flex justify-between">
+              {(Object.keys(FINAL_SCORING_NAMES) as unknown as number[]).map((id) => {
+                const numId = Number(id);
+                const isSelected = finalScoringConditions.includes(numId);
+                return (
+                  <button
+                    key={numId}
+                    type="button"
+                    title={getFinalScoringName(numId)}
+                    onClick={() => {
+                      if (isSelected) {
+                        setFinalScoringConditions(finalScoringConditions.filter((x) => x !== numId));
+                      } else if (finalScoringConditions.length < 2) {
+                        setFinalScoringConditions([...finalScoringConditions, numId]);
+                      } else {
+                        // Replace the first selected with the new one
+                        setFinalScoringConditions([finalScoringConditions[1], numId]);
                       }
-                      className="text-blue-600 hover:text-blue-800"
-                    >
-                      ✕
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
+                    }}
+                    className={`rounded-md overflow-hidden transition-all ${
+                      isSelected
+                        ? 'ring-4 ring-blue-500 ring-offset-2'
+                        : 'opacity-60 hover:opacity-90'
+                    }`}
+                  >
+                    <Image
+                      src={`/final-scorings/${numId}.webp`}
+                      alt={getFinalScoringName(numId)}
+                      width={80}
+                      height={56}
+                    />
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </div>
       </div>

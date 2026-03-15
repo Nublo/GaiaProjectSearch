@@ -1,5 +1,6 @@
+import Image from 'next/image';
 import type { GameResult, PlayerResult, StructureCondition } from '@/types/game';
-import { RACE_NAMES } from '@/lib/gaia-constants';
+import { RACE_NAMES, getFinalScoringName } from '@/lib/gaia-constants';
 
 const RACE_BADGE_CLASS: Record<string, string> = {
   'Terrans':      'bg-blue-600 text-white',
@@ -108,6 +109,21 @@ export default function GameCard({ game, structureConditions = [] }: GameCardPro
             <span>Min ELO: {game.minPlayerElo ?? 'N/A'}</span>
           </div>
         </div>
+        {game.finalScorings?.length > 0 && (
+          <div className="flex gap-2">
+            {game.finalScorings.map((id) => (
+              <Image
+                key={id}
+                src={`/final-scorings/${id}.webp`}
+                alt={getFinalScoringName(id)}
+                title={getFinalScoringName(id)}
+                width={80}
+                height={56}
+                className="rounded"
+              />
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="space-y-2">
