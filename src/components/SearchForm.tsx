@@ -89,136 +89,65 @@ export default function SearchForm({ onSearch, isLoading = false }: SearchFormPr
       <div className="mb-6">
         <h3 className="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wide">Single Filters</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Winner Race */}
-          <div>
-            <label htmlFor="winnerRace" className="block text-sm font-medium text-gray-700 mb-2">
-              Winner Fraction
-            </label>
-            <select
-              id="winnerRace"
-              value={criteria.winnerRace || ''}
-              onChange={(e) => setCriteria({ ...criteria, winnerRace: e.target.value || undefined })}
-              className={inputClassName}
-            >
-              <option value="">Any Race</option>
-              <option value="Terrans">Terrans</option>
-              <option value="Lantids">Lantids</option>
-              <option value="Xenos">Xenos</option>
-              <option value="Gleens">Gleens</option>
-              <option value="Taklons">Taklons</option>
-              <option value="Ambas">Ambas</option>
-              <option value="Hadsch Hallas">Hadsch Hallas</option>
-              <option value="Ivits">Ivits</option>
-              <option value="Geodens">Geodens</option>
-              <option value="Bal T'aks">Bal T&apos;aks</option>
-              <option value="Firacs">Firacs</option>
-              <option value="Bescods">Bescods</option>
-              <option value="Nevlas">Nevlas</option>
-              <option value="Itars">Itars</option>
-            </select>
-          </div>
-
-          {/* Winning Player */}
-          <div>
-            <label htmlFor="winnerPlayerName" className="block text-sm font-medium text-gray-700 mb-2">
-              Winning Player
-            </label>
-            <div className="relative">
-              <input
-                type="text"
-                id="winnerPlayerName"
-                value={criteria.winnerPlayerName || ''}
-                onChange={(e) => {
-                  setCriteria({ ...criteria, winnerPlayerName: e.target.value || undefined });
-                  setShowWinnerSuggestions(true);
-                }}
-                onFocus={() => setShowWinnerSuggestions(true)}
-                onBlur={() => setTimeout(() => setShowWinnerSuggestions(false), 150)}
-                placeholder="Search by winner name"
-                className={inputClassName}
-                autoComplete="off"
-              />
-              {showWinnerSuggestions && winnerSuggestions.length > 0 && (
-                <ul className="absolute z-10 w-full bg-white border border-gray-200 rounded-md shadow-lg mt-1 overflow-hidden">
-                  {winnerSuggestions.map((name) => (
-                    <li
-                      key={name}
-                      onMouseDown={() => {
-                        setCriteria({ ...criteria, winnerPlayerName: name });
-                        setShowWinnerSuggestions(false);
-                      }}
-                      className="px-3 py-2 text-sm text-gray-800 hover:bg-blue-50 cursor-pointer"
-                    >
-                      {name}
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          </div>
-
-          {/* Player ELO and Level - Combined Row */}
+          {/* Winner Fraction — full width */}
           <div className="md:col-span-2">
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Player ELO (min)
+              Winner
             </label>
-            <div className="flex gap-4">
-              {/* Player Level Dropdown */}
-              <div className="flex-1">
-                <select
-                  id="playerLevelDropdown"
-                  value={selectedLevel}
-                  onChange={(e) => {
-                    setSelectedLevel(e.target.value);
-                    if (e.target.value !== '') {
-                      setCriteria({ ...criteria, minPlayerElo: parseInt(e.target.value) });
-                    } else {
-                      setCriteria({ ...criteria, minPlayerElo: undefined });
-                    }
-                  }}
-                  className={inputClassName}
-                >
-                  <option value="">Select level...</option>
-                  <option value="0">Beginner - 0</option>
-                  <option value="1">Apprentice - 1</option>
-                  <option value="100">Average - 100</option>
-                  <option value="200">Good - 200</option>
-                  <option value="300">Strong - 300</option>
-                  <option value="500">Expert - 500</option>
-                  <option value="700">Master - 700</option>
-                </select>
-              </div>
-
-              {/* Player ELO Manual Input */}
-              <div className="flex-1">
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  id="minPlayerElo"
-                  value={criteria.minPlayerElo ?? ''}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    // Only allow digits
-                    if (value === '' || /^\d+$/.test(value)) {
-                      setSelectedLevel(''); // Reset dropdown to default
-                      setCriteria({ ...criteria, minPlayerElo: value !== '' ? parseInt(value) : undefined });
-                    }
-                  }}
-                  onKeyDown={(e) => {
-                    // Allow only: digits, Backspace, Delete, Tab, Enter, Arrow keys
-                    const allowedKeys = ['Backspace', 'Delete', 'Tab', 'Enter', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'];
-                    const isDigit = /^[0-9]$/.test(e.key);
-
-                    if (!isDigit && !allowedKeys.includes(e.key) && !e.ctrlKey && !e.metaKey) {
-                      e.preventDefault();
-                    }
-                  }}
-                  placeholder="e.g., 150 or 230"
-                  className={inputClassName}
-                />
-              </div>
-            </div>
+            {(() => {
+              const races: { name: string; file: string }[] = [
+                { name: 'Terrans',       file: 'Terrans_tile.png' },
+                { name: 'Lantids',       file: 'Lantids_tile.png' },
+                { name: 'Xenos',         file: 'Xenos_tile.png' },
+                { name: 'Gleens',        file: 'Gleens_tile.png' },
+                { name: 'Taklons',       file: 'Taklons_tile.png' },
+                { name: 'Ambas',         file: 'Ambass_tile.png' },
+                { name: 'Hadsch Hallas', file: 'HadshHallas_tile.png' },
+                { name: 'Ivits',         file: 'Ivits_tile.png' },
+                { name: 'Geodens',       file: 'Geodens_tile.png' },
+                { name: "Bal T'aks",     file: 'Baltaks_tile.png' },
+                { name: 'Firacs',        file: 'Firacs_tile.png' },
+                { name: 'Bescods',       file: 'Bescods_tile.png' },
+                { name: 'Nevlas',        file: 'Nevlas_tile.png' },
+                { name: 'Itars',         file: 'Itars_tile.png' },
+              ];
+              const rows = [races.slice(0, 7), races.slice(7)];
+              return (
+                <div className="flex flex-col gap-2">
+                  {rows.map((row, rowIdx) => (
+                    <div key={rowIdx} className="flex justify-between">
+                      {row.map(({ name, file }) => {
+                        const isSelected = criteria.winnerRace === name;
+                        return (
+                          <button
+                            key={name}
+                            type="button"
+                            title={name}
+                            onClick={() =>
+                              setCriteria({ ...criteria, winnerRace: isSelected ? undefined : name })
+                            }
+                            className={`rounded-md overflow-hidden transition-all ${
+                              isSelected
+                                ? 'ring-4 ring-blue-500 ring-offset-2'
+                                : 'opacity-60 hover:opacity-90'
+                            }`}
+                          >
+                            <Image
+                              src={`/races/${file}`}
+                              alt={name}
+                              width={80}
+                              height={80}
+                            />
+                          </button>
+                        );
+                      })}
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
           </div>
+
           {/* Final Scoring Mission */}
           <div className="md:col-span-2">
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -260,6 +189,70 @@ export default function SearchForm({ onSearch, isLoading = false }: SearchFormPr
               })}
             </div>
           </div>
+
+          {/* Player ELO (min) */}
+          <div>
+            <label htmlFor="playerLevelDropdown" className="block text-sm font-medium text-gray-700 mb-2">
+              Players ELO (min)
+            </label>
+            <select
+              id="playerLevelDropdown"
+              value={selectedLevel}
+              onChange={(e) => {
+                setSelectedLevel(e.target.value);
+                setCriteria({ ...criteria, minPlayerElo: e.target.value !== '' ? parseInt(e.target.value) : undefined });
+              }}
+              className={inputClassName}
+            >
+              <option value="">Select level...</option>
+              <option value="0">Beginner - 0</option>
+              <option value="1">Apprentice - 1</option>
+              <option value="100">Average - 100</option>
+              <option value="200">Good - 200</option>
+              <option value="300">Strong - 300</option>
+              <option value="500">Expert - 500</option>
+              <option value="700">Master - 700</option>
+            </select>
+          </div>
+
+          {/* Winning Player */}
+          <div>
+            <label htmlFor="winnerPlayerName" className="block text-sm font-medium text-gray-700 mb-2">
+              Winner
+            </label>
+            <div className="relative">
+              <input
+                type="text"
+                id="winnerPlayerName"
+                value={criteria.winnerPlayerName || ''}
+                onChange={(e) => {
+                  setCriteria({ ...criteria, winnerPlayerName: e.target.value || undefined });
+                  setShowWinnerSuggestions(true);
+                }}
+                onFocus={() => setShowWinnerSuggestions(true)}
+                onBlur={() => setTimeout(() => setShowWinnerSuggestions(false), 150)}
+                placeholder="Winner name"
+                className={inputClassName}
+                autoComplete="off"
+              />
+              {showWinnerSuggestions && winnerSuggestions.length > 0 && (
+                <ul className="absolute z-10 w-full bg-white border border-gray-200 rounded-md shadow-lg mt-1 overflow-hidden">
+                  {winnerSuggestions.map((name) => (
+                    <li
+                      key={name}
+                      onMouseDown={() => {
+                        setCriteria({ ...criteria, winnerPlayerName: name });
+                        setShowWinnerSuggestions(false);
+                      }}
+                      className="px-3 py-2 text-sm text-gray-800 hover:bg-blue-50 cursor-pointer"
+                    >
+                      {name}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
         </div>
       </div>
 
@@ -276,7 +269,7 @@ export default function SearchForm({ onSearch, isLoading = false }: SearchFormPr
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label htmlFor="race" className="block text-sm font-medium text-gray-700 mb-2">
-                Race
+                Fraction
               </label>
               <select
                 id="race"
@@ -284,7 +277,7 @@ export default function SearchForm({ onSearch, isLoading = false }: SearchFormPr
                 onChange={(e) => setCriteria({ ...criteria, race: e.target.value || undefined })}
                 className={inputClassName}
               >
-                <option value="">Any Race</option>
+                <option value="">Any Fraction</option>
                 <option value="Terrans">Terrans</option>
                 <option value="Lantids">Lantids</option>
                 <option value="Xenos">Xenos</option>
@@ -361,7 +354,7 @@ export default function SearchForm({ onSearch, isLoading = false }: SearchFormPr
               }}
               className="px-4 h-10 bg-green-600 text-white rounded-md hover:bg-green-700 whitespace-nowrap"
             >
-              Add condition
+              Add
             </button>
           </div>
 
@@ -394,9 +387,11 @@ export default function SearchForm({ onSearch, isLoading = false }: SearchFormPr
           )}
         </div>
 
+        {/* Amount of Players + Player Name — side by side */}
+        <div className="mb-4 flex gap-4">
         {/* Amount of Players Section */}
-        <div className="mb-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
-          <h4 className="text-xs font-semibold text-gray-600 mb-2 uppercase">Amount of Players <span className="text-yellow-700">(OR)</span></h4>
+        <div className="flex-1 p-4 bg-gray-50 rounded-lg border border-gray-200">
+          <h4 className="text-xs font-semibold text-gray-600 mb-2 uppercase">Players Count <span className="text-yellow-700">(OR)</span></h4>
           <div className="flex gap-2">
             <select
               id="playerCount"
@@ -419,7 +414,7 @@ export default function SearchForm({ onSearch, isLoading = false }: SearchFormPr
               }}
               className="px-4 h-10 bg-green-600 text-white rounded-md hover:bg-green-700 whitespace-nowrap"
             >
-              Add condition
+              Add
             </button>
           </div>
 
@@ -448,8 +443,8 @@ export default function SearchForm({ onSearch, isLoading = false }: SearchFormPr
         </div>
 
         {/* Player Name Section */}
-        <div className="mb-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
-          <h4 className="text-xs font-semibold text-gray-600 mb-2 uppercase">Player Name <span className="text-green-700">(AND)</span></h4>
+        <div className="flex-1 p-4 bg-gray-50 rounded-lg border border-gray-200 mb-0">
+          <h4 className="text-xs font-semibold text-gray-600 mb-2 uppercase">Player <span className="text-green-700">(AND)</span></h4>
           <div className="flex gap-2">
             <div className="relative flex-1">
               <input
@@ -462,7 +457,7 @@ export default function SearchForm({ onSearch, isLoading = false }: SearchFormPr
                 }}
                 onFocus={() => setShowSuggestions(true)}
                 onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
-                placeholder="Search by player name"
+                placeholder="Player name"
                 className="w-full h-10 px-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 autoComplete="off"
               />
@@ -493,7 +488,7 @@ export default function SearchForm({ onSearch, isLoading = false }: SearchFormPr
               }}
               className="px-4 h-10 bg-green-600 text-white rounded-md hover:bg-green-700 whitespace-nowrap"
             >
-              Add condition
+              Add
             </button>
           </div>
 
@@ -520,6 +515,7 @@ export default function SearchForm({ onSearch, isLoading = false }: SearchFormPr
             </div>
           )}
         </div>
+        </div> {/* end flex row */}
       </div>
 
       {/* Buttons */}
@@ -529,7 +525,7 @@ export default function SearchForm({ onSearch, isLoading = false }: SearchFormPr
           disabled={isLoading}
           className="flex-1 bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
         >
-          {isLoading ? 'Searching...' : 'Search Games'}
+          {isLoading ? 'Searching...' : 'Search'}
         </button>
         <button
           type="button"
