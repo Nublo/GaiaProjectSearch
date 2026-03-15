@@ -9,11 +9,15 @@ interface FormState {
   winnerRace?: string;
   winnerPlayerName?: string;
   minPlayerElo?: number;
-  race?: string;
-  structure?: string;
-  maxRound?: number;
   playerCount?: number;
   playerName?: string;
+}
+
+interface FractionConfig {
+  race: string;
+  conditions: { structure?: string; maxRound?: number }[];
+  tempStructure?: string;
+  tempMaxRound?: number;
 }
 
 interface SearchFormProps {
@@ -21,13 +25,35 @@ interface SearchFormProps {
   isLoading?: boolean;
 }
 
+const races: { name: string; file: string }[] = [
+  { name: 'Terrans',       file: 'Terrans_tile.png' },
+  { name: 'Lantids',       file: 'Lantids_tile.png' },
+  { name: 'Xenos',         file: 'Xenos_tile.png' },
+  { name: 'Gleens',        file: 'Gleens_tile.png' },
+  { name: 'Taklons',       file: 'Taklons_tile.png' },
+  { name: 'Ambas',         file: 'Ambass_tile.png' },
+  { name: 'Hadsch Hallas', file: 'HadshHallas_tile.png' },
+  { name: 'Ivits',         file: 'Ivits_tile.png' },
+  { name: 'Geodens',       file: 'Geodens_tile.png' },
+  { name: "Bal T'aks",     file: 'Baltaks_tile.png' },
+  { name: 'Firacs',        file: 'Firacs_tile.png' },
+  { name: 'Bescods',       file: 'Bescods_tile.png' },
+  { name: 'Nevlas',        file: 'Nevlas_tile.png' },
+  { name: 'Itars',         file: 'Itars_tile.png' },
+];
+
+const raceRows = [races.slice(0, 7), races.slice(7)];
+
+function getRaceFile(name: string): string {
+  return races.find((r) => r.name === name)?.file ?? '';
+}
+
 export default function SearchForm({ onSearch, isLoading = false }: SearchFormProps) {
   const [criteria, setCriteria] = useState<FormState>({});
   const [selectedLevel, setSelectedLevel] = useState<string>('');
 
-  // State for added conditions
+  const [fractionConfigs, setFractionConfigs] = useState<FractionConfig[]>([]);
   const [playerNameConditions, setPlayerNameConditions] = useState<string[]>([]);
-  const [structureConditions, setStructureConditions] = useState<StructureCondition[]>([]);
   const [playerCountConditions, setPlayerCountConditions] = useState<number[]>([]);
   const [finalScoringConditions, setFinalScoringConditions] = useState<number[]>([]);
 
@@ -59,6 +85,11 @@ export default function SearchForm({ onSearch, isLoading = false }: SearchFormPr
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const structureConditions: StructureCondition[] = fractionConfigs.flatMap((fc) =>
+      fc.conditions.length === 0
+        ? [{ race: fc.race }]
+        : fc.conditions.map((c) => ({ race: fc.race, ...c }))
+    );
     onSearch({
       winnerRace: criteria.winnerRace,
       winnerPlayerName: criteria.winnerPlayerName,
@@ -73,11 +104,42 @@ export default function SearchForm({ onSearch, isLoading = false }: SearchFormPr
   const handleReset = () => {
     setCriteria({});
     setSelectedLevel('');
+    setFractionConfigs([]);
     setPlayerNameConditions([]);
-    setStructureConditions([]);
     setPlayerCountConditions([]);
     setFinalScoringConditions([]);
   };
+
+  function toggleFraction(name: string) {
+    if (fractionConfigs.some((fc) => fc.race === name)) {
+      setFractionConfigs(fractionConfigs.filter((fc) => fc.race !== name));
+    } else {
+      setFractionConfigs([...fractionConfigs, { race: name, conditions: [] }]);
+    }
+  }
+
+  function updateFractionTemp(race: string, patch: Partial<Pick<FractionConfig, 'tempStructure' | 'tempMaxRound'>>) {
+    setFractionConfigs(fractionConfigs.map((fc) => fc.race !== race ? fc : { ...fc, ...patch }));
+  }
+
+  function addConditionToFraction(race: string) {
+    setFractionConfigs(fractionConfigs.map((fc) => {
+      if (fc.race !== race) return fc;
+      if (!fc.tempStructure && !fc.tempMaxRound) return fc;
+      return {
+        ...fc,
+        conditions: [...fc.conditions, { structure: fc.tempStructure, maxRound: fc.tempMaxRound }],
+        tempStructure: undefined,
+        tempMaxRound: undefined,
+      };
+    }));
+  }
+
+  function removeConditionFromFraction(race: string, idx: number) {
+    setFractionConfigs(fractionConfigs.map((fc) =>
+      fc.race !== race ? fc : { ...fc, conditions: fc.conditions.filter((_, i) => i !== idx) }
+    ));
+  }
 
   const inputClassName = "w-full h-10 px-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500";
 
@@ -93,58 +155,37 @@ export default function SearchForm({ onSearch, isLoading = false }: SearchFormPr
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Winner
             </label>
-            {(() => {
-              const races: { name: string; file: string }[] = [
-                { name: 'Terrans',       file: 'Terrans_tile.png' },
-                { name: 'Lantids',       file: 'Lantids_tile.png' },
-                { name: 'Xenos',         file: 'Xenos_tile.png' },
-                { name: 'Gleens',        file: 'Gleens_tile.png' },
-                { name: 'Taklons',       file: 'Taklons_tile.png' },
-                { name: 'Ambas',         file: 'Ambass_tile.png' },
-                { name: 'Hadsch Hallas', file: 'HadshHallas_tile.png' },
-                { name: 'Ivits',         file: 'Ivits_tile.png' },
-                { name: 'Geodens',       file: 'Geodens_tile.png' },
-                { name: "Bal T'aks",     file: 'Baltaks_tile.png' },
-                { name: 'Firacs',        file: 'Firacs_tile.png' },
-                { name: 'Bescods',       file: 'Bescods_tile.png' },
-                { name: 'Nevlas',        file: 'Nevlas_tile.png' },
-                { name: 'Itars',         file: 'Itars_tile.png' },
-              ];
-              const rows = [races.slice(0, 7), races.slice(7)];
-              return (
-                <div className="flex flex-col gap-2">
-                  {rows.map((row, rowIdx) => (
-                    <div key={rowIdx} className="flex justify-between">
-                      {row.map(({ name, file }) => {
-                        const isSelected = criteria.winnerRace === name;
-                        return (
-                          <button
-                            key={name}
-                            type="button"
-                            title={name}
-                            onClick={() =>
-                              setCriteria({ ...criteria, winnerRace: isSelected ? undefined : name })
-                            }
-                            className={`rounded-md overflow-hidden transition-all ${
-                              isSelected
-                                ? 'ring-4 ring-blue-500 ring-offset-2'
-                                : 'opacity-60 hover:opacity-90'
-                            }`}
-                          >
-                            <Image
-                              src={`/races/${file}`}
-                              alt={name}
-                              width={80}
-                              height={80}
-                            />
-                          </button>
-                        );
-                      })}
-                    </div>
-                  ))}
+            <div className="flex flex-col gap-2">
+              {raceRows.map((row, rowIdx) => (
+                <div key={rowIdx} className="flex justify-between">
+                  {row.map(({ name, file }) => {
+                    const isSelected = criteria.winnerRace === name;
+                    return (
+                      <button
+                        key={name}
+                        type="button"
+                        title={name}
+                        onClick={() =>
+                          setCriteria({ ...criteria, winnerRace: isSelected ? undefined : name })
+                        }
+                        className={`rounded-md overflow-hidden transition-all ${
+                          isSelected
+                            ? 'ring-4 ring-blue-500 ring-offset-2'
+                            : 'opacity-60 hover:opacity-90'
+                        }`}
+                      >
+                        <Image
+                          src={`/races/${file}`}
+                          alt={name}
+                          width={80}
+                          height={80}
+                        />
+                      </button>
+                    );
+                  })}
                 </div>
-              );
-            })()}
+              ))}
+            </div>
           </div>
 
           {/* Final Scoring Mission */}
@@ -167,7 +208,6 @@ export default function SearchForm({ onSearch, isLoading = false }: SearchFormPr
                       } else if (finalScoringConditions.length < 2) {
                         setFinalScoringConditions([...finalScoringConditions, numId]);
                       } else {
-                        // Replace the first selected with the new one
                         setFinalScoringConditions([finalScoringConditions[1], numId]);
                       }
                     }}
@@ -263,126 +303,116 @@ export default function SearchForm({ onSearch, isLoading = false }: SearchFormPr
 
         {/* Fraction Config Section */}
         <div className="mb-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
-          <h4 className="text-xs font-semibold text-gray-600 mb-2 uppercase">Fraction Config <span className="text-green-700">(AND)</span></h4>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <label htmlFor="race" className="block text-sm font-medium text-gray-700 mb-2">
-                Fraction
-              </label>
-              <select
-                id="race"
-                value={criteria.race || ''}
-                onChange={(e) => setCriteria({ ...criteria, race: e.target.value || undefined })}
-                className={inputClassName}
-              >
-                <option value="">Any Fraction</option>
-                <option value="Terrans">Terrans</option>
-                <option value="Lantids">Lantids</option>
-                <option value="Xenos">Xenos</option>
-                <option value="Gleens">Gleens</option>
-                <option value="Taklons">Taklons</option>
-                <option value="Ambas">Ambas</option>
-                <option value="Hadsch Hallas">Hadsch Hallas</option>
-                <option value="Ivits">Ivits</option>
-                <option value="Geodens">Geodens</option>
-                <option value="Bal T'aks">Bal T&apos;aks</option>
-                <option value="Firacs">Firacs</option>
-                <option value="Bescods">Bescods</option>
-                <option value="Nevlas">Nevlas</option>
-                <option value="Itars">Itars</option>
-              </select>
-            </div>
+          <h4 className="text-xs font-semibold text-gray-600 mb-3 uppercase">Fraction Config <span className="text-green-700">(AND)</span></h4>
 
-            <div>
-              <label htmlFor="structure" className="block text-sm font-medium text-gray-700 mb-2">
-                Structure
-              </label>
-              <select
-                id="structure"
-                value={criteria.structure || ''}
-                onChange={(e) => setCriteria({ ...criteria, structure: e.target.value || undefined })}
-                className={inputClassName}
-              >
-                <option value="">Any Structure</option>
-                <option value="mine">Mine</option>
-                <option value="trading-station">Trading Station</option>
-                <option value="research-lab">Research Lab</option>
-                <option value="planetary-institute">Planetary Institute</option>
-                <option value="knowledge-academy">Knowledge Academy</option>
-                <option value="qic-academy">QIC Academy</option>
-              </select>
-            </div>
-
-            <div>
-              <label htmlFor="maxRound" className="block text-sm font-medium text-gray-700 mb-2">
-                Built in Round (max)
-              </label>
-              <select
-                id="maxRound"
-                value={criteria.maxRound || ''}
-                onChange={(e) => setCriteria({ ...criteria, maxRound: e.target.value ? parseInt(e.target.value) : undefined })}
-                className={inputClassName}
-              >
-                <option value="">Any</option>
-                <option value="1">1</option>
-                <option value="2">2</option>
-                <option value="3">3</option>
-                <option value="4">4</option>
-                <option value="5">5</option>
-                <option value="6">6</option>
-              </select>
-            </div>
-          </div>
-
-          <div className="mt-3">
-            <button
-              type="button"
-              onClick={() => {
-                if (criteria.structure || criteria.race) {
-                  const newCondition: StructureCondition = {
-                    race: criteria.race,
-                    structure: criteria.structure,
-                    maxRound: criteria.maxRound,
-                  };
-                  setStructureConditions([...structureConditions, newCondition]);
-                  const { race, structure, maxRound, ...restCriteria } = criteria;
-                  void race; void structure; void maxRound;
-                  setCriteria(restCriteria);
-                }
-              }}
-              className="px-4 h-10 bg-green-600 text-white rounded-md hover:bg-green-700 whitespace-nowrap"
-            >
-              Add
-            </button>
-          </div>
-
-          {/* Display added conditions */}
-          {structureConditions.length > 0 && (
-            <div className="mt-3 flex flex-wrap gap-2">
-              {structureConditions.map((condition, index) => (
-                <div
-                  key={index}
-                  className="inline-flex items-center gap-2 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm"
+          {/* Tile picker */}
+          <div className="flex flex-wrap gap-2 mb-4">
+            {races.map(({ name, file }) => {
+              const isActive = fractionConfigs.some((fc) => fc.race === name);
+              return (
+                <button
+                  key={name}
+                  type="button"
+                  title={name}
+                  onClick={() => toggleFraction(name)}
+                  className={`rounded-md overflow-hidden transition-all ${
+                    isActive
+                      ? 'ring-4 ring-green-500 ring-offset-2'
+                      : 'opacity-60 hover:opacity-90'
+                  }`}
                 >
-                  <span>
-                    {condition.race && `${condition.race}`}
-                    {condition.race && condition.structure && ': '}
-                    {condition.structure && condition.structure.replace('-', ' ')}
-                    {condition.maxRound && ` (round ≤ ${condition.maxRound})`}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setStructureConditions(structureConditions.filter((_, i) => i !== index));
-                    }}
-                    className="text-blue-600 hover:text-blue-800"
-                  >
-                    ✕
-                  </button>
+                  <Image src={`/races/${file}`} alt={name} width={50} height={50} />
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Active fraction entries */}
+          {fractionConfigs.map((fc) => (
+            <div key={fc.race} className="mb-3 p-3 bg-white rounded border border-gray-200 relative">
+              {/* Remove button — top-right corner */}
+              <button
+                type="button"
+                onClick={() => toggleFraction(fc.race)}
+                className="absolute top-2 right-2 text-gray-400 hover:text-red-500 transition-colors text-xl leading-none"
+                aria-label={`Remove ${fc.race}`}
+              >
+                ✕
+              </button>
+              {/* Header: tile + name */}
+              <div className="flex items-center gap-2 mb-2 pr-5">
+                <Image
+                  src={`/races/${getRaceFile(fc.race)}`}
+                  alt={fc.race}
+                  width={32}
+                  height={32}
+                  className="rounded"
+                />
+                <span className="font-medium text-sm">{fc.race}</span>
+              </div>
+
+              {/* Sub-form: structure + round + add */}
+              <div className="flex gap-2">
+                <select
+                  value={fc.tempStructure || ''}
+                  onChange={(e) => updateFractionTemp(fc.race, { tempStructure: e.target.value || undefined })}
+                  className="flex-1 h-9 px-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Any Structure</option>
+                  <option value="mine">Mine</option>
+                  <option value="trading-station">Trading Station</option>
+                  <option value="research-lab">Research Lab</option>
+                  <option value="planetary-institute">Planetary Institute</option>
+                  <option value="knowledge-academy">Knowledge Academy</option>
+                  <option value="qic-academy">QIC Academy</option>
+                </select>
+                <select
+                  value={fc.tempMaxRound || ''}
+                  onChange={(e) => updateFractionTemp(fc.race, { tempMaxRound: e.target.value ? parseInt(e.target.value) : undefined })}
+                  className="w-28 h-9 px-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Any Round</option>
+                  <option value="1">Round ≤ 1</option>
+                  <option value="2">Round ≤ 2</option>
+                  <option value="3">Round ≤ 3</option>
+                  <option value="4">Round ≤ 4</option>
+                  <option value="5">Round ≤ 5</option>
+                  <option value="6">Round ≤ 6</option>
+                </select>
+                <button
+                  type="button"
+                  onClick={() => addConditionToFraction(fc.race)}
+                  className="px-3 h-9 bg-green-600 text-white rounded-md hover:bg-green-700 text-sm whitespace-nowrap"
+                >
+                  Add
+                </button>
+              </div>
+
+              {/* Condition chips */}
+              {fc.conditions.length > 0 && (
+                <div className="mt-2 flex flex-wrap gap-1">
+                  {fc.conditions.map((c, i) => (
+                    <div
+                      key={i}
+                      className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-100 text-blue-800 rounded-full text-xs"
+                    >
+                      <span>
+                        {c.structure ? c.structure.replace(/-/g, ' ') : 'any structure'}
+                        {c.maxRound ? ` round ≤ ${c.maxRound}` : ''}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => removeConditionFromFraction(fc.race, i)}
+                        className="text-blue-500 hover:text-blue-700 ml-0.5"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ))}
                 </div>
-              ))}
+              )}
             </div>
-          )}
+          ))}
         </div>
 
         {/* Amount of Players + Player Name — side by side */}
@@ -416,7 +446,6 @@ export default function SearchForm({ onSearch, isLoading = false }: SearchFormPr
             </button>
           </div>
 
-          {/* Display added conditions */}
           {playerCountConditions.length > 0 && (
             <div className="mt-3 flex flex-wrap gap-2">
               {playerCountConditions.map((count, index) => (
@@ -490,7 +519,6 @@ export default function SearchForm({ onSearch, isLoading = false }: SearchFormPr
             </button>
           </div>
 
-          {/* Display added conditions */}
           {playerNameConditions.length > 0 && (
             <div className="mt-3 flex flex-wrap gap-2">
               {playerNameConditions.map((name, index) => (
