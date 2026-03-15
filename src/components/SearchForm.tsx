@@ -87,7 +87,6 @@ export default function SearchForm({ onSearch, isLoading = false }: SearchFormPr
 
       {/* Section 1: Single Selection Filters */}
       <div className="mb-6">
-        <h3 className="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wide">Single Filters</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Winner Fraction — full width */}
           <div className="md:col-span-2">
@@ -261,7 +260,6 @@ export default function SearchForm({ onSearch, isLoading = false }: SearchFormPr
 
       {/* Section 2: Multiple Selection Filters */}
       <div className="mb-6">
-        <h3 className="text-sm font-semibold text-gray-700 mb-4 uppercase tracking-wide">Multiple Filters</h3>
 
         {/* Fraction Config Section */}
         <div className="mb-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
