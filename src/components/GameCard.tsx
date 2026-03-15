@@ -87,9 +87,10 @@ function getMatchedConditionLabels(
 interface GameCardProps {
   game: GameResult;
   structureConditions?: StructureCondition[];
+  highlightedFinalScorings?: number[];
 }
 
-export default function GameCard({ game, structureConditions = [] }: GameCardProps) {
+export default function GameCard({ game, structureConditions = [], highlightedFinalScorings = [] }: GameCardProps) {
   const sortedPlayers = [...game.players].sort((a, b) => b.finalScore - a.finalScore);
 
   return (
@@ -110,18 +111,25 @@ export default function GameCard({ game, structureConditions = [] }: GameCardPro
           </div>
         </div>
         {game.finalScorings?.length > 0 && (
-          <div className="flex gap-2">
-            {game.finalScorings.map((id) => (
-              <Image
-                key={id}
-                src={`/final-scorings/${id}.webp`}
-                alt={getFinalScoringName(id)}
-                title={getFinalScoringName(id)}
-                width={80}
-                height={56}
-                className="rounded"
-              />
-            ))}
+          <div className="flex gap-4">
+            {game.finalScorings.map((id) => {
+              const isHighlighted = highlightedFinalScorings.includes(id);
+              return (
+                <div
+                  key={id}
+                  className={isHighlighted ? 'rounded ring-4 ring-green-500 ring-offset-2' : 'rounded'}
+                >
+                  <Image
+                    src={`/final-scorings/${id}.webp`}
+                    alt={getFinalScoringName(id)}
+                    title={getFinalScoringName(id)}
+                    width={80}
+                    height={56}
+                    className="rounded"
+                  />
+                </div>
+              );
+            })}
           </div>
         )}
       </div>

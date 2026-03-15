@@ -133,6 +133,7 @@ export default function SearchResults({ games, total, isLoading = false, searchR
               key={game.id}
               game={game}
               structureConditions={searchRequest?.structureConditions}
+              highlightedFinalScorings={searchRequest?.finalScorings}
             />
           ))}
         </div>
