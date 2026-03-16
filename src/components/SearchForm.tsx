@@ -175,7 +175,7 @@ export default function SearchForm({ onSearch, isLoading = false }: SearchFormPr
     ));
   }
 
-  const inputClassName = "w-full h-10 px-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500";
+  const inputClassName = "w-full h-10 px-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-gray-500 text-gray-900";
 
   return (
     <form onSubmit={handleSubmit} className="w-full max-w-4xl mx-auto p-6 bg-white rounded-lg shadow-md">
@@ -382,15 +382,15 @@ export default function SearchForm({ onSearch, isLoading = false }: SearchFormPr
                   height={32}
                   className="rounded"
                 />
-                <span className="font-medium text-sm">{fc.race}</span>
+                <span className="font-medium text-sm text-gray-900">{fc.race}</span>
               </div>
 
               {/* Sub-form: structure + round + add */}
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 <select
                   value={fc.tempStructure || ''}
                   onChange={(e) => updateFractionTemp(fc.race, { tempStructure: e.target.value || undefined })}
-                  className="flex-1 h-9 px-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="flex-1 min-w-0 h-9 px-2 border border-gray-300 rounded-md text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="mine">Mine</option>
                   <option value="trading-station">Trading Station</option>
@@ -402,7 +402,7 @@ export default function SearchForm({ onSearch, isLoading = false }: SearchFormPr
                 <select
                   value={fc.tempMaxRound || ''}
                   onChange={(e) => updateFractionTemp(fc.race, { tempMaxRound: e.target.value ? parseInt(e.target.value) : undefined })}
-                  className="w-28 h-9 px-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-28 h-9 px-2 border border-gray-300 rounded-md text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="">Any Round</option>
                   <option value="1">Round ≤ 1</option>
@@ -415,18 +415,18 @@ export default function SearchForm({ onSearch, isLoading = false }: SearchFormPr
                 <button
                   type="button"
                   onClick={() => addConditionToFraction(fc.race)}
-                  className="px-3 h-9 bg-green-600 text-white rounded-md hover:bg-green-700 text-sm whitespace-nowrap"
+                  className="flex-1 sm:flex-none px-3 h-9 bg-green-600 text-white rounded-md hover:bg-green-700 text-sm whitespace-nowrap"
                 >
                   Add
                 </button>
               </div>
 
               {/* Sub-form: research track + min level + round + add */}
-              <div className="flex gap-2 mt-2">
+              <div className="flex flex-wrap gap-2 mt-2">
                 <select
                   value={fc.tempResearchTrack || ''}
                   onChange={(e) => updateFractionResearchTemp(fc.race, { tempResearchTrack: e.target.value ? parseInt(e.target.value) : undefined })}
-                  className="flex-1 h-9 px-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="flex-1 min-w-0 h-9 px-2 border border-gray-300 rounded-md text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   {Object.entries(RESEARCH_TRACK_SHORT_NAMES).map(([id, name]) => (
                     <option key={id} value={id}>{name}</option>
@@ -439,12 +439,12 @@ export default function SearchForm({ onSearch, isLoading = false }: SearchFormPr
                   placeholder="≥ Level"
                   value={fc.tempResearchMinLevel || ''}
                   onChange={(e) => updateFractionResearchTemp(fc.race, { tempResearchMinLevel: e.target.value ? parseInt(e.target.value) : undefined })}
-                  className="w-20 h-9 px-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-20 h-9 px-2 border border-gray-300 rounded-md text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-gray-500"
                 />
                 <select
                   value={fc.tempResearchMaxRound || ''}
                   onChange={(e) => updateFractionResearchTemp(fc.race, { tempResearchMaxRound: e.target.value ? parseInt(e.target.value) : undefined })}
-                  className="w-28 h-9 px-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-28 h-9 px-2 border border-gray-300 rounded-md text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="">Any Round</option>
                   <option value="1">Round ≤ 1</option>
@@ -457,7 +457,7 @@ export default function SearchForm({ onSearch, isLoading = false }: SearchFormPr
                 <button
                   type="button"
                   onClick={() => addResearchConditionToFraction(fc.race)}
-                  className="px-3 h-9 bg-green-600 text-white rounded-md hover:bg-green-700 text-sm whitespace-nowrap"
+                  className="flex-1 sm:flex-none px-3 h-9 bg-green-600 text-white rounded-md hover:bg-green-700 text-sm whitespace-nowrap"
                 >
                   Add
                 </button>
@@ -579,7 +579,7 @@ export default function SearchForm({ onSearch, isLoading = false }: SearchFormPr
                 onFocus={() => setShowSuggestions(true)}
                 onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
                 placeholder="Player name"
-                className="w-full h-10 px-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full h-10 px-3 border border-gray-300 rounded-md text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-gray-500"
                 autoComplete="off"
               />
               {showSuggestions && suggestions.length > 0 && (
@@ -650,7 +650,7 @@ export default function SearchForm({ onSearch, isLoading = false }: SearchFormPr
         <button
           type="button"
           onClick={handleReset}
-          className="px-6 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+          className="px-6 py-2 border border-gray-300 rounded-md text-gray-900 hover:bg-gray-50 transition-colors"
         >
           Reset
         </button>
