@@ -317,7 +317,7 @@ export default function SearchForm({ onSearch, isLoading = false }: SearchFormPr
                   onClick={() => toggleFraction(name)}
                   className={`rounded-md overflow-hidden transition-all ${
                     isActive
-                      ? 'ring-4 ring-green-500 ring-offset-2'
+                      ? 'ring-4 ring-blue-500 ring-offset-2'
                       : 'opacity-60 hover:opacity-90'
                   }`}
                 >

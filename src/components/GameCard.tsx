@@ -117,7 +117,7 @@ export default function GameCard({ game, structureConditions = [], highlightedFi
               return (
                 <div
                   key={id}
-                  className={isHighlighted ? 'rounded ring-4 ring-green-500 ring-offset-2' : 'rounded'}
+                  className={isHighlighted ? 'rounded ring-4 ring-blue-500 ring-offset-2' : 'rounded'}
                 >
                   <Image
                     src={`/final-scorings/${id}.webp`}
