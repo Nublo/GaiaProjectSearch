@@ -116,6 +116,9 @@ export enum EventType {
   NOTIFY_BUILD = 'notifyBuild', // Building mines (structure 4)
   NOTIFY_UPGRADE = 'notifyUpgrade', // Upgrading to other structures
 
+  // Research track advances
+  NOTIFY_RESEARCH = 'notifyResearch', // Advancing on a research track (+1 to track level)
+
   // Scoring
   NOTIFY_SCORE = 'notifyScore', // Final scoring events (used to detect active final scoring missions)
 }
@@ -181,7 +184,19 @@ export interface PlayerRaceMapping {
   finalScore: number;
   playerElo: number | null; // Normalized ELO (with BGA offset subtracted)
   buildings: number[][]; // buildings[round] = [buildingId1, buildingId2, ...]
+  research: number[][];    // research[roundIdx][trackIdx] = absolute level at end of that round (0-indexed)
+  researchLevels: number[]; // [t1..t6] — current absolute levels during parsing, tracks 1-6 at indices 0-5
 }
+
+// Short display names for research tracks (for UI chips and labels)
+export const RESEARCH_TRACK_SHORT_NAMES: Record<number, string> = {
+  1: 'Terraforming',
+  2: 'Navigation',
+  3: 'AI',
+  4: 'Gaia Forming',
+  5: 'Economy',
+  6: 'Science',
+};
 
 export interface BuildingAction {
   playerId: number;

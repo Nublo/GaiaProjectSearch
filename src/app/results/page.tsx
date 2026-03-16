@@ -11,6 +11,7 @@ const EMPTY_REQUEST: SearchRequest = {
   playerNames: [],
   playerCounts: [],
   structureConditions: [],
+  researchConditions: [],
 };
 
 export default async function ResultsPage({

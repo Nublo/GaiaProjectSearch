@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
-import type { SearchRequest, StructureCondition } from '@/types/game';
-import { FINAL_SCORING_NAMES, getFinalScoringName } from '@/lib/gaia-constants';
+import type { SearchRequest, StructureCondition, ResearchCondition } from '@/types/game';
+import { FINAL_SCORING_NAMES, getFinalScoringName, RESEARCH_TRACK_SHORT_NAMES } from '@/lib/gaia-constants';
 
 interface FormState {
   winnerRace?: string;
@@ -18,6 +18,10 @@ interface FractionConfig {
   conditions: { structure?: string; maxRound?: number }[];
   tempStructure?: string;
   tempMaxRound?: number;
+  researchConditions: { track?: number; minLevel?: number; maxRound?: number }[];
+  tempResearchTrack?: number;
+  tempResearchMinLevel?: number;
+  tempResearchMaxRound?: number;
 }
 
 interface SearchFormProps {
@@ -86,9 +90,12 @@ export default function SearchForm({ onSearch, isLoading = false }: SearchFormPr
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const structureConditions: StructureCondition[] = fractionConfigs.flatMap((fc) =>
-      fc.conditions.length === 0
+      fc.conditions.length === 0 && fc.researchConditions.length === 0
         ? [{ race: fc.race }]
         : fc.conditions.map((c) => ({ race: fc.race, ...c }))
+    );
+    const researchConditions: ResearchCondition[] = fractionConfigs.flatMap((fc) =>
+      fc.researchConditions.map((c) => ({ race: fc.race, ...c }))
     );
     onSearch({
       winnerRace: criteria.winnerRace,
@@ -97,6 +104,7 @@ export default function SearchForm({ onSearch, isLoading = false }: SearchFormPr
       playerNames: playerNameConditions,
       playerCounts: playerCountConditions,
       structureConditions,
+      researchConditions,
       finalScorings: finalScoringConditions,
     });
   };
@@ -114,7 +122,7 @@ export default function SearchForm({ onSearch, isLoading = false }: SearchFormPr
     if (fractionConfigs.some((fc) => fc.race === name)) {
       setFractionConfigs(fractionConfigs.filter((fc) => fc.race !== name));
     } else {
-      setFractionConfigs([...fractionConfigs, { race: name, conditions: [] }]);
+      setFractionConfigs([...fractionConfigs, { race: name, conditions: [], researchConditions: [] }]);
     }
   }
 
@@ -138,6 +146,34 @@ export default function SearchForm({ onSearch, isLoading = false }: SearchFormPr
   function removeConditionFromFraction(race: string, idx: number) {
     setFractionConfigs(fractionConfigs.map((fc) =>
       fc.race !== race ? fc : { ...fc, conditions: fc.conditions.filter((_, i) => i !== idx) }
+    ));
+  }
+
+  function updateFractionResearchTemp(race: string, patch: Partial<Pick<FractionConfig, 'tempResearchTrack' | 'tempResearchMinLevel' | 'tempResearchMaxRound'>>) {
+    setFractionConfigs(fractionConfigs.map((fc) => fc.race !== race ? fc : { ...fc, ...patch }));
+  }
+
+  function addResearchConditionToFraction(race: string) {
+    setFractionConfigs(fractionConfigs.map((fc) => {
+      if (fc.race !== race) return fc;
+      if (!fc.tempResearchTrack && !fc.tempResearchMinLevel) return fc;
+      return {
+        ...fc,
+        researchConditions: [...fc.researchConditions, {
+          track: fc.tempResearchTrack,
+          minLevel: fc.tempResearchMinLevel,
+          maxRound: fc.tempResearchMaxRound,
+        }],
+        tempResearchTrack: undefined,
+        tempResearchMinLevel: undefined,
+        tempResearchMaxRound: undefined,
+      };
+    }));
+  }
+
+  function removeResearchConditionFromFraction(race: string, idx: number) {
+    setFractionConfigs(fractionConfigs.map((fc) =>
+      fc.race !== race ? fc : { ...fc, researchConditions: fc.researchConditions.filter((_, i) => i !== idx) }
     ));
   }
 
@@ -388,12 +424,55 @@ export default function SearchForm({ onSearch, isLoading = false }: SearchFormPr
                 </button>
               </div>
 
+              {/* Sub-form: research track + min level + round + add */}
+              <div className="flex gap-2 mt-2">
+                <select
+                  value={fc.tempResearchTrack || ''}
+                  onChange={(e) => updateFractionResearchTemp(fc.race, { tempResearchTrack: e.target.value ? parseInt(e.target.value) : undefined })}
+                  className="flex-1 h-9 px-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Any Research Track</option>
+                  {Object.entries(RESEARCH_TRACK_SHORT_NAMES).map(([id, name]) => (
+                    <option key={id} value={id}>{name}</option>
+                  ))}
+                </select>
+                <input
+                  type="number"
+                  min={1}
+                  max={5}
+                  placeholder="≥ Level"
+                  value={fc.tempResearchMinLevel || ''}
+                  onChange={(e) => updateFractionResearchTemp(fc.race, { tempResearchMinLevel: e.target.value ? parseInt(e.target.value) : undefined })}
+                  className="w-20 h-9 px-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <select
+                  value={fc.tempResearchMaxRound || ''}
+                  onChange={(e) => updateFractionResearchTemp(fc.race, { tempResearchMaxRound: e.target.value ? parseInt(e.target.value) : undefined })}
+                  className="w-28 h-9 px-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Any Round</option>
+                  <option value="1">Round ≤ 1</option>
+                  <option value="2">Round ≤ 2</option>
+                  <option value="3">Round ≤ 3</option>
+                  <option value="4">Round ≤ 4</option>
+                  <option value="5">Round ≤ 5</option>
+                  <option value="6">Round ≤ 6</option>
+                </select>
+                <button
+                  type="button"
+                  onClick={() => addResearchConditionToFraction(fc.race)}
+                  className="px-3 h-9 bg-green-600 text-white rounded-md hover:bg-green-700 text-sm whitespace-nowrap"
+                >
+                  Add
+                </button>
+              </div>
+
               {/* Condition chips */}
-              {fc.conditions.length > 0 && (
+              {(fc.conditions.length > 0 || fc.researchConditions.length > 0) && (
                 <div className="mt-2 flex flex-wrap gap-1">
                   {fc.conditions.map((c, i) => (
                     <div
-                      key={i}
+                      key={`s-${i}`}
                       className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-100 text-blue-800 rounded-full text-xs"
                     >
                       <span>
@@ -404,6 +483,25 @@ export default function SearchForm({ onSearch, isLoading = false }: SearchFormPr
                         type="button"
                         onClick={() => removeConditionFromFraction(fc.race, i)}
                         className="text-blue-500 hover:text-blue-700 ml-0.5"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ))}
+                  {fc.researchConditions.map((c, i) => (
+                    <div
+                      key={`r-${i}`}
+                      className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-100 text-green-800 rounded-full text-xs"
+                    >
+                      <span>
+                        {c.track ? RESEARCH_TRACK_SHORT_NAMES[c.track] : 'any track'}
+                        {c.minLevel !== undefined ? ` ≥${c.minLevel}` : ''}
+                        {c.maxRound ? ` round ≤ ${c.maxRound}` : ''}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => removeResearchConditionFromFraction(fc.race, i)}
+                        className="text-green-600 hover:text-green-800 ml-0.5"
                       >
                         ✕
                       </button>

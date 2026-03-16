@@ -41,6 +41,9 @@ export async function storeGame(parsedGame: ParsedGameData) {
             isWinner: player.playerName === parsedGame.winnerName,
             buildingsData: {
               buildings: player.buildings
+            },
+            researchData: {
+              research: player.research
             }
           }
         })

@@ -1,5 +1,5 @@
 import Image from 'next/image';
-import type { GameResult, PlayerResult, StructureCondition } from '@/types/game';
+import type { GameResult, PlayerResult, StructureCondition, ResearchCondition } from '@/types/game';
 import { RACE_NAMES, getFinalScoringName } from '@/lib/gaia-constants';
 
 const RACE_BADGE_CLASS: Record<string, string> = {
@@ -87,10 +87,11 @@ function getMatchedConditionLabels(
 interface GameCardProps {
   game: GameResult;
   structureConditions?: StructureCondition[];
+  researchConditions?: ResearchCondition[];
   highlightedFinalScorings?: number[];
 }
 
-export default function GameCard({ game, structureConditions = [], highlightedFinalScorings = [] }: GameCardProps) {
+export default function GameCard({ game, structureConditions = [], researchConditions = [], highlightedFinalScorings = [] }: GameCardProps) {
   const sortedPlayers = [...game.players].sort((a, b) => b.finalScore - a.finalScore);
 
   return (

@@ -12,6 +12,7 @@ import {
   getRaceName,
   getBuildingName,
   FINAL_SCORING_DESC_TO_ID,
+  RESEARCH_TRACK_SHORT_NAMES,
 } from './gaia-constants';
 import { GetGameLogResponse, GameTableInfo, GetTableInfoResponse } from './bga-types';
 
@@ -91,8 +92,11 @@ export class GameLogParser {
       for (const event of packet.data) {
         const eventType = event.type;
 
-        // Track round endings
+        // Track round endings — snapshot research levels BEFORE incrementing round
         if (eventType === EventType.NOTIFY_ROUND_END) {
+          for (const player of players) {
+            player.research.push([...player.researchLevels]);
+          }
           currentRound++;
           console.log(`[Parser] Round ${currentRound} ended at packet ${packetId}`);
         }
@@ -103,6 +107,7 @@ export class GameLogParser {
           const playerName = event.args.player_name;
           const raceId = parseInt(event.args.raceId);
 
+          const startResearch = event.args.player?.research as number[] | undefined;
           players.push({
             playerId,
             playerName,
@@ -111,6 +116,10 @@ export class GameLogParser {
             finalScore: 0, // Will be updated when parsing game end
             playerElo: playerEloMap.get(playerId) || null, // Get normalized ELO from table info
             buildings: [], // Will be populated as buildings are built
+            research: [],  // Will be populated at each notifyRoundEnd with absolute level snapshots
+            researchLevels: startResearch
+              ? [startResearch[1], startResearch[2], startResearch[3], startResearch[4], startResearch[5], startResearch[6]]
+              : [0, 0, 0, 0, 0, 0],
           });
 
           console.log(
@@ -170,6 +179,23 @@ export class GameLogParser {
           const desc = event.args?.desc;
           if (desc && FINAL_SCORING_DESC_TO_ID[desc] !== undefined) {
             finalScoringDescs.add(desc);
+          }
+        }
+
+        // Parse research track advances (notifyResearch events)
+        if (eventType === EventType.NOTIFY_RESEARCH) {
+          const args = event.args;
+          const playerId = parseInt(args.playerId || args.player_id);
+          const trackId = parseInt(args.whichResearch); // 1-6
+
+          if (playerId && trackId >= 1 && trackId <= 6) {
+            const player = players.find((p) => p.playerId === playerId);
+            if (player) {
+              player.researchLevels[trackId - 1]++;
+              console.log(
+                `[Parser] ${args.player_name} advanced ${RESEARCH_TRACK_SHORT_NAMES[trackId]} to level ${player.researchLevels[trackId - 1]}`
+              );
+            }
           }
         }
 

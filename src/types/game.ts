@@ -20,6 +20,7 @@ export interface PlayerResult {
   playerElo?: number | null;
   isWinner: boolean;
   buildingsData: { buildings: number[][] };
+  researchData: { research: number[][] };
 }
 
 export interface SearchRequest {
@@ -29,6 +30,7 @@ export interface SearchRequest {
   playerNames: string[];
   playerCounts: number[];
   structureConditions: StructureCondition[];
+  researchConditions: ResearchCondition[];
   finalScorings?: number[];
 }
 
@@ -36,6 +38,13 @@ export interface StructureCondition {
   race?: string;
   structure?: string;
   maxRound?: number;
+}
+
+export interface ResearchCondition {
+  race?: string;      // optional — filter to specific race
+  track?: number;     // ResearchTrack ID (1-6)
+  minLevel?: number;  // minimum absolute level (0-5)
+  maxRound?: number;  // check level at end of this round; absent = end of game (round 6)
 }
 
 export interface SearchResponse {

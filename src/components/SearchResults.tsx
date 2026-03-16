@@ -1,6 +1,6 @@
 import GameCard from './GameCard';
-import type { GameResult, SearchRequest, StructureCondition } from '@/types/game';
-import { getFinalScoringName } from '@/lib/gaia-constants';
+import type { GameResult, SearchRequest, StructureCondition, ResearchCondition } from '@/types/game';
+import { getFinalScoringName, RESEARCH_TRACK_SHORT_NAMES } from '@/lib/gaia-constants';
 
 const STRUCTURE_LABELS: Record<string, string> = {
   'mine': 'Mine',
@@ -10,6 +10,18 @@ const STRUCTURE_LABELS: Record<string, string> = {
   'qic-academy': 'QIC Academy',
   'planetary-institute': 'Planetary Institute',
 };
+
+function formatResearchCondition(cond: ResearchCondition): string {
+  const parts: string[] = [];
+  if (cond.race) parts.push(cond.race);
+  if (cond.track) {
+    const trackName = RESEARCH_TRACK_SHORT_NAMES[cond.track] ?? `Track ${cond.track}`;
+    parts.push(cond.race ? `: ${trackName}` : trackName);
+  }
+  if (cond.minLevel !== undefined) parts.push(` ≥${cond.minLevel}`);
+  if (cond.maxRound) parts.push(` (round ≤ ${cond.maxRound})`);
+  return parts.join('');
+}
 
 function formatStructureCondition(cond: StructureCondition): string {
   const parts: string[] = [];
@@ -34,6 +46,8 @@ function SearchCriteriaSummary({ req }: { req: SearchRequest }) {
     chips.push({ label: 'Player', value: name });
   for (const cond of req.structureConditions)
     chips.push({ label: 'Fraction', value: formatStructureCondition(cond) });
+  for (const cond of req.researchConditions ?? [])
+    chips.push({ label: 'Research', value: formatResearchCondition(cond) });
   for (const id of req.finalScorings ?? [])
     chips.push({ label: 'Final Scoring', value: getFinalScoringName(id) });
 
@@ -133,6 +147,7 @@ export default function SearchResults({ games, total, isLoading = false, searchR
               key={game.id}
               game={game}
               structureConditions={searchRequest?.structureConditions}
+              researchConditions={searchRequest?.researchConditions}
               highlightedFinalScorings={searchRequest?.finalScorings}
             />
           ))}
