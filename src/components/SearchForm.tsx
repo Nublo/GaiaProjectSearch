@@ -122,7 +122,7 @@ export default function SearchForm({ onSearch, isLoading = false }: SearchFormPr
     if (fractionConfigs.some((fc) => fc.race === name)) {
       setFractionConfigs(fractionConfigs.filter((fc) => fc.race !== name));
     } else {
-      setFractionConfigs([...fractionConfigs, { race: name, conditions: [], researchConditions: [] }]);
+      setFractionConfigs([...fractionConfigs, { race: name, conditions: [], researchConditions: [], tempStructure: 'knowledge-academy', tempResearchTrack: 1, tempResearchMinLevel: 4, tempResearchMaxRound: 6 }]);
     }
   }
 
@@ -133,11 +133,10 @@ export default function SearchForm({ onSearch, isLoading = false }: SearchFormPr
   function addConditionToFraction(race: string) {
     setFractionConfigs(fractionConfigs.map((fc) => {
       if (fc.race !== race) return fc;
-      if (!fc.tempStructure && !fc.tempMaxRound) return fc;
       return {
         ...fc,
         conditions: [...fc.conditions, { structure: fc.tempStructure, maxRound: fc.tempMaxRound }],
-        tempStructure: undefined,
+        tempStructure: 'knowledge-academy',
         tempMaxRound: undefined,
       };
     }));
@@ -156,7 +155,6 @@ export default function SearchForm({ onSearch, isLoading = false }: SearchFormPr
   function addResearchConditionToFraction(race: string) {
     setFractionConfigs(fractionConfigs.map((fc) => {
       if (fc.race !== race) return fc;
-      if (!fc.tempResearchTrack && !fc.tempResearchMinLevel) return fc;
       return {
         ...fc,
         researchConditions: [...fc.researchConditions, {
@@ -164,9 +162,9 @@ export default function SearchForm({ onSearch, isLoading = false }: SearchFormPr
           minLevel: fc.tempResearchMinLevel,
           maxRound: fc.tempResearchMaxRound,
         }],
-        tempResearchTrack: undefined,
-        tempResearchMinLevel: undefined,
-        tempResearchMaxRound: undefined,
+        tempResearchTrack: 1,
+        tempResearchMinLevel: 4,
+        tempResearchMaxRound: 6,
       };
     }));
   }
@@ -394,7 +392,6 @@ export default function SearchForm({ onSearch, isLoading = false }: SearchFormPr
                   onChange={(e) => updateFractionTemp(fc.race, { tempStructure: e.target.value || undefined })}
                   className="flex-1 h-9 px-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  <option value="">Any Structure</option>
                   <option value="mine">Mine</option>
                   <option value="trading-station">Trading Station</option>
                   <option value="research-lab">Research Lab</option>
@@ -431,7 +428,6 @@ export default function SearchForm({ onSearch, isLoading = false }: SearchFormPr
                   onChange={(e) => updateFractionResearchTemp(fc.race, { tempResearchTrack: e.target.value ? parseInt(e.target.value) : undefined })}
                   className="flex-1 h-9 px-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  <option value="">Any Research Track</option>
                   {Object.entries(RESEARCH_TRACK_SHORT_NAMES).map(([id, name]) => (
                     <option key={id} value={id}>{name}</option>
                   ))}
@@ -476,7 +472,7 @@ export default function SearchForm({ onSearch, isLoading = false }: SearchFormPr
                       className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-100 text-blue-800 rounded-full text-xs"
                     >
                       <span>
-                        {c.structure ? c.structure.replace(/-/g, ' ') : 'any structure'}
+                        {c.structure ? c.structure.replace(/-/g, ' ').replace(/^\w/, (ch) => ch.toUpperCase()) : 'Any structure'}
                         {c.maxRound ? ` round ≤ ${c.maxRound}` : ''}
                       </span>
                       <button

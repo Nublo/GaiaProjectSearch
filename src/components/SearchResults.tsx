@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import GameCard from './GameCard';
 import type { GameResult, SearchRequest, StructureCondition, ResearchCondition } from '@/types/game';
 import { getFinalScoringName, RESEARCH_TRACK_SHORT_NAMES } from '@/lib/gaia-constants';
@@ -11,62 +12,122 @@ const STRUCTURE_LABELS: Record<string, string> = {
   'planetary-institute': 'Planetary Institute',
 };
 
-function formatResearchCondition(cond: ResearchCondition): string {
-  const parts: string[] = [];
-  if (cond.race) parts.push(cond.race);
-  if (cond.track) {
-    const trackName = RESEARCH_TRACK_SHORT_NAMES[cond.track] ?? `Track ${cond.track}`;
-    parts.push(cond.race ? `: ${trackName}` : trackName);
-  }
-  if (cond.minLevel !== undefined) parts.push(` ≥${cond.minLevel}`);
-  if (cond.maxRound) parts.push(` (round ≤ ${cond.maxRound})`);
-  return parts.join('');
+const RACE_IMAGE_FILES: Record<string, string> = {
+  'Terrans': 'Terrans_tile.png',
+  'Lantids': 'Lantids_tile.png',
+  'Xenos': 'Xenos_tile.png',
+  'Gleens': 'Gleens_tile.png',
+  'Taklons': 'Taklons_tile.png',
+  'Ambas': 'Ambass_tile.png',
+  'Hadsch Hallas': 'HadshHallas_tile.png',
+  'Ivits': 'Ivits_tile.png',
+  'Geodens': 'Geodens_tile.png',
+  "Bal T'aks": 'Baltaks_tile.png',
+  'Firacs': 'Firacs_tile.png',
+  'Bescods': 'Bescods_tile.png',
+  'Nevlas': 'Nevlas_tile.png',
+  'Itars': 'Itars_tile.png',
+};
+
+function structureChipLabel(cond: StructureCondition): string {
+  if (!cond.structure) return 'Present';
+  const label = STRUCTURE_LABELS[cond.structure] ?? cond.structure;
+  return cond.maxRound ? `${label} (round ≤ ${cond.maxRound})` : label;
 }
 
-function formatStructureCondition(cond: StructureCondition): string {
+function researchChipLabel(cond: ResearchCondition): string {
   const parts: string[] = [];
-  if (cond.race) parts.push(cond.race);
-  if (cond.structure) {
-    const label = STRUCTURE_LABELS[cond.structure] ?? cond.structure;
-    parts.push(cond.race ? `: ${label}` : label);
-  }
-  if (cond.maxRound) parts.push(` (round ≤ ${cond.maxRound})`);
-  return parts.join('');
+  if (cond.track) parts.push(RESEARCH_TRACK_SHORT_NAMES[cond.track] ?? `Track ${cond.track}`);
+  if (cond.minLevel !== undefined) parts.push(`≥${cond.minLevel}`);
+  if (cond.maxRound) parts.push(`(round ≤ ${cond.maxRound})`);
+  return parts.join(' ');
+}
+
+function Chip({ label, value }: { label: string; value: string }) {
+  return (
+    <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-50 border border-blue-200 rounded-full text-sm text-blue-800">
+      <span className="font-medium text-blue-600">{label}:</span>
+      {value}
+    </span>
+  );
+}
+
+function FractionFilterChip({ children }: { children: React.ReactNode }) {
+  return (
+    <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-50 border border-blue-200 rounded-full text-sm text-blue-800">
+      {children}
+    </span>
+  );
 }
 
 function SearchCriteriaSummary({ req }: { req: SearchRequest }) {
-  const chips: { label: string; value: string }[] = [];
+  // Group structure + research conditions by race
+  const fractionMap = new Map<string, { structures: StructureCondition[]; research: ResearchCondition[] }>();
 
-  if (req.winnerRace) chips.push({ label: 'Winner race', value: req.winnerRace });
-  if (req.winnerPlayerName) chips.push({ label: 'Winner', value: req.winnerPlayerName });
-  if (req.minPlayerElo) chips.push({ label: 'Min ELO', value: `≥ ${req.minPlayerElo}` });
-  if (req.playerCounts.length > 0)
-    chips.push({ label: 'Players', value: req.playerCounts.join(' or ') });
-  for (const name of req.playerNames)
-    chips.push({ label: 'Player', value: name });
-  for (const cond of req.structureConditions)
-    chips.push({ label: 'Fraction', value: formatStructureCondition(cond) });
-  for (const cond of req.researchConditions ?? [])
-    chips.push({ label: 'Research', value: formatResearchCondition(cond) });
-  for (const id of req.finalScorings ?? [])
-    chips.push({ label: 'Final Scoring', value: getFinalScoringName(id) });
+  for (const cond of req.structureConditions ?? []) {
+    const key = cond.race ?? '';
+    if (!fractionMap.has(key)) fractionMap.set(key, { structures: [], research: [] });
+    fractionMap.get(key)!.structures.push(cond);
+  }
+  for (const cond of req.researchConditions ?? []) {
+    const key = cond.race ?? '';
+    if (!fractionMap.has(key)) fractionMap.set(key, { structures: [], research: [] });
+    fractionMap.get(key)!.research.push(cond);
+  }
 
-  if (chips.length === 0) {
-    return (
-      <p className="text-sm text-gray-500 italic">No filters applied — showing all games</p>
-    );
+  const hasFractionFilters = fractionMap.size > 0;
+  const hasOtherFilters =
+    req.winnerRace || req.winnerPlayerName || req.minPlayerElo ||
+    req.playerCounts.length > 0 || req.playerNames.length > 0 || (req.finalScorings ?? []).length > 0;
+
+  if (!hasFractionFilters && !hasOtherFilters) {
+    return <p className="text-sm text-gray-500 italic">No filters applied — showing all games</p>;
   }
 
   return (
-    <div className="flex flex-wrap gap-2">
-      {chips.map((chip, i) => (
-        <span
-          key={i}
-          className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-50 border border-blue-200 rounded-full text-sm text-blue-800"
-        >
-          <span className="font-medium text-blue-600">{chip.label}:</span>
-          {chip.value}
-        </span>
+    <div className="space-y-3">
+      {/* Non-fraction filters */}
+      {hasOtherFilters && (
+        <div className="flex flex-wrap gap-2">
+          {req.winnerRace && (
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-50 border border-blue-200 rounded-full text-sm text-blue-800">
+              <span className="font-medium text-blue-600">Winner</span>
+              {RACE_IMAGE_FILES[req.winnerRace] && (
+                <Image src={`/races/${RACE_IMAGE_FILES[req.winnerRace]}`} alt={req.winnerRace} width={48} height={48} className="rounded" />
+              )}
+            </span>
+          )}
+          {req.winnerPlayerName && <Chip label="Winner" value={req.winnerPlayerName} />}
+          {req.minPlayerElo && <Chip label="Min ELO" value={`≥ ${req.minPlayerElo}`} />}
+          {req.playerCounts.length > 0 && <Chip label="Players" value={req.playerCounts.join(' or ')} />}
+          {req.playerNames.map((name) => <Chip key={name} label="Player" value={name} />)}
+          {(req.finalScorings ?? []).map((id) => <Chip key={id} label="Final Scoring" value={getFinalScoringName(id)} />)}
+        </div>
+      )}
+
+      {/* Fraction-grouped filters */}
+      {Array.from(fractionMap.entries()).map(([race, { structures, research }]) => (
+        <div key={race || '__any__'} className="flex items-center gap-2 flex-wrap">
+          {race && RACE_IMAGE_FILES[race] && (
+            <Image
+              src={`/races/${RACE_IMAGE_FILES[race]}`}
+              alt={race}
+              width={32}
+              height={32}
+              className="rounded"
+            />
+          )}
+          {structures.map((cond, i) => (
+            <FractionFilterChip key={`s-${i}`}>
+              {structureChipLabel(cond)}
+            </FractionFilterChip>
+          ))}
+          {research.map((cond, i) => (
+            <span key={`r-${i}`} className="inline-flex items-center gap-1.5 px-3 py-1 bg-green-100 border border-green-300 rounded-full text-sm text-green-800">
+              {researchChipLabel(cond)}
+            </span>
+          ))}
+        </div>
       ))}
     </div>
   );
