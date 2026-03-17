@@ -22,9 +22,15 @@ export interface PlayerResult {
   buildingsData: { buildings: number[][] };
   researchData: { research: number[][] };
   advancedTechsData: number[];
+  standardTechsData: number[];
 }
 
 export interface AdvancedTechCondition {
+  race?: string;
+  techId: number;
+}
+
+export interface StandardTechCondition {
   race?: string;
   techId: number;
 }
@@ -39,6 +45,7 @@ export interface SearchRequest {
   researchConditions: ResearchCondition[];
   finalScorings?: number[];
   advancedTechConditions?: AdvancedTechCondition[];
+  standardTechConditions?: StandardTechCondition[];
 }
 
 export interface StructureCondition {

@@ -14,6 +14,7 @@ import {
   FINAL_SCORING_DESC_TO_ID,
   RESEARCH_TRACK_SHORT_NAMES,
   ADVANCED_TECH_LABELS,
+  STANDARD_TECH_LABELS,
 } from './gaia-constants';
 import { GetGameLogResponse, GameTableInfo, GetTableInfoResponse } from './bga-types';
 
@@ -122,6 +123,7 @@ export class GameLogParser {
               ? [startResearch[1], startResearch[2], startResearch[3], startResearch[4], startResearch[5], startResearch[6]]
               : [0, 0, 0, 0, 0, 0],
             advancedTechs: [], // Will be populated when notifyGainTech events with coverupTechId != 0 are found
+            standardTechs: [], // Will be populated when notifyGainTech events with coverupTechId === 0 are found
           });
 
           console.log(
@@ -228,18 +230,26 @@ export class GameLogParser {
           }
         }
 
-        // Parse advanced technology tile acquisitions (notifyGainTech events)
+        // Parse advanced and standard technology tile acquisitions (notifyGainTech events)
         if (eventType === EventType.NOTIFY_GAIN_TECH) {
           const args = event.args;
           const coverupTechId = parseInt(args.coverupTechId);
+          const techId = parseInt(args.techId);
+          const playerId = parseInt(args.playerId || args.player_id);
           if (coverupTechId !== 0) {
-            const techId = parseInt(args.techId);
-            const playerId = parseInt(args.playerId || args.player_id);
             if (playerId && techId && ADVANCED_TECH_LABELS[techId] !== undefined) {
               const player = players.find((p) => p.playerId === playerId);
               if (player && !player.advancedTechs.includes(techId)) {
                 player.advancedTechs.push(techId);
                 console.log(`[Parser] ${args.player_name} took advanced tech ${techId} (${ADVANCED_TECH_LABELS[techId]})`);
+              }
+            }
+          } else if (coverupTechId === 0) {
+            if (playerId && techId && STANDARD_TECH_LABELS[techId] !== undefined) {
+              const player = players.find((p) => p.playerId === playerId);
+              if (player && !player.standardTechs.includes(techId)) {
+                player.standardTechs.push(techId);
+                console.log(`[Parser] ${args.player_name} took standard tech ${techId} (${STANDARD_TECH_LABELS[techId]})`);
               }
             }
           }

@@ -40,6 +40,7 @@ model Player {
   buildingsData      Json    @map("buildings_data")
   researchData       Json    @map("research_data")
   advancedTechsData  Int[]   @default([]) @map("advanced_techs_data")
+  standardTechsData  Int[]   @default([]) @map("standard_techs_data")
   game               Game    @relation(fields: [tableId], references: [tableId], onDelete: Cascade)
 
   @@index([playerName])
@@ -55,5 +56,6 @@ model Player {
   @@index([buildingsData], map: "players_buildings_data_gin_idx", type: Gin)
   @@index([researchData], map: "players_research_data_gin_idx", type: Gin)
   @@index([advancedTechsData], map: "players_advanced_techs_data_gin_idx", type: Gin)
+  @@index([standardTechsData], map: "players_standard_techs_data_gin_idx", type: Gin)
   @@map("players")
 }

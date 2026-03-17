@@ -46,6 +46,7 @@ export async function storeGame(parsedGame: ParsedGameData) {
               research: player.research
             },
             advancedTechsData: [...player.advancedTechs].sort((a, b) => a - b),
+            standardTechsData: [...player.standardTechs].sort((a, b) => a - b),
           }
         })
       )

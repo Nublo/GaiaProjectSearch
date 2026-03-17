@@ -190,6 +190,7 @@ export interface PlayerRaceMapping {
   research: number[][];    // research[roundIdx][trackIdx] = absolute level at end of that round (0-indexed)
   researchLevels: number[]; // [t1..t6] — current absolute levels during parsing, tracks 1-6 at indices 0-5
   advancedTechs: number[]; // sorted array of advanced tech tile IDs (10-24) taken by this player
+  standardTechs: number[]; // sorted array of standard tech tile IDs (1-9) taken by this player
 }
 
 // Short display names for research tracks (for UI chips and labels)
@@ -238,6 +239,32 @@ export const ADVANCED_TECH_IMAGES: Record<number, string> = {
   22: '22_(+2vpKnowledgeStep).webp',
   23: '23_(+3vpMine).webp',
   24: '24_(+3vpTradingStation).webp',
+};
+
+// Standard technology tile labels (IDs 1-9)
+export const STANDARD_TECH_LABELS: Record<number, string> = {
+  1: '1o1q',
+  2: 'KForPlanetTypes',
+  3: '7VP',
+  4: '+3vpGaiaPlanet',
+  5: 'BigBuildings',
+  6: '+1o1c',
+  7: '+1k1c',
+  8: '+4c',
+  9: 'Charge4',
+};
+
+// Filenames for standard tech images in /public/standart-techs/
+export const STANDARD_TECH_IMAGES: Record<number, string> = {
+  1: '1_(1o1q).webp',
+  2: '2_(KForPlanetTypes).webp',
+  3: '3_(7VP).webp',
+  4: '4_(+3vpGaiaPlanet).webp',
+  5: '5_(BigBuildings).webp',
+  6: '6_(+1o1c).webp',
+  7: '7_(+1k1c).webp',
+  8: '8_(+4c).webp',
+  9: '9_(Charge4).webp',
 };
 
 export interface BuildingAction {

@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
-import type { SearchRequest, StructureCondition, ResearchCondition, AdvancedTechCondition } from '@/types/game';
-import { FINAL_SCORING_NAMES, getFinalScoringName, RESEARCH_TRACK_SHORT_NAMES, ADVANCED_TECH_LABELS, ADVANCED_TECH_IMAGES } from '@/lib/gaia-constants';
+import type { SearchRequest, StructureCondition, ResearchCondition, AdvancedTechCondition, StandardTechCondition } from '@/types/game';
+import { FINAL_SCORING_NAMES, getFinalScoringName, RESEARCH_TRACK_SHORT_NAMES, ADVANCED_TECH_LABELS, ADVANCED_TECH_IMAGES, STANDARD_TECH_LABELS, STANDARD_TECH_IMAGES } from '@/lib/gaia-constants';
 
 interface FormState {
   winnerRace?: string;
@@ -23,6 +23,7 @@ interface FractionConfig {
   tempResearchMinLevel?: number;
   tempResearchMaxRound?: number;
   advancedTechs: number[];
+  standardTechs: number[];
 }
 
 interface SearchFormProps {
@@ -59,6 +60,7 @@ export default function SearchForm({ onSearch, isLoading = false }: SearchFormPr
 
   const [fractionConfigs, setFractionConfigs] = useState<FractionConfig[]>([]);
   const [advancedTechDialogRace, setAdvancedTechDialogRace] = useState<string | null>(null);
+  const [standardTechDialogRace, setStandardTechDialogRace] = useState<string | null>(null);
   const [playerNameConditions, setPlayerNameConditions] = useState<string[]>([]);
   const [playerCountConditions, setPlayerCountConditions] = useState<number[]>([]);
   const [finalScoringConditions, setFinalScoringConditions] = useState<number[]>([]);
@@ -102,6 +104,9 @@ export default function SearchForm({ onSearch, isLoading = false }: SearchFormPr
     const advancedTechConditions: AdvancedTechCondition[] = fractionConfigs.flatMap((fc) =>
       fc.advancedTechs.map((techId) => ({ race: fc.race, techId }))
     );
+    const standardTechConditions: StandardTechCondition[] = fractionConfigs.flatMap((fc) =>
+      fc.standardTechs.map((techId) => ({ race: fc.race, techId }))
+    );
     onSearch({
       winnerRace: criteria.winnerRace,
       winnerPlayerName: criteria.winnerPlayerName,
@@ -112,6 +117,7 @@ export default function SearchForm({ onSearch, isLoading = false }: SearchFormPr
       researchConditions,
       finalScorings: finalScoringConditions,
       advancedTechConditions,
+      standardTechConditions,
     });
   };
 
@@ -120,6 +126,7 @@ export default function SearchForm({ onSearch, isLoading = false }: SearchFormPr
     setSelectedLevel('');
     setFractionConfigs([]);
     setAdvancedTechDialogRace(null);
+    setStandardTechDialogRace(null);
     setPlayerNameConditions([]);
     setPlayerCountConditions([]);
     setFinalScoringConditions([]);
@@ -129,7 +136,7 @@ export default function SearchForm({ onSearch, isLoading = false }: SearchFormPr
     if (fractionConfigs.some((fc) => fc.race === name)) {
       setFractionConfigs(fractionConfigs.filter((fc) => fc.race !== name));
     } else {
-      setFractionConfigs([...fractionConfigs, { race: name, conditions: [], researchConditions: [], advancedTechs: [], tempStructure: 'knowledge-academy', tempResearchTrack: 1, tempResearchMinLevel: 4, tempResearchMaxRound: 6 }]);
+      setFractionConfigs([...fractionConfigs, { race: name, conditions: [], researchConditions: [], advancedTechs: [], standardTechs: [], tempStructure: 'knowledge-academy', tempResearchTrack: 1, tempResearchMinLevel: 4, tempResearchMaxRound: 6 }]);
     }
   }
 
@@ -196,6 +203,23 @@ export default function SearchForm({ onSearch, isLoading = false }: SearchFormPr
   function removeAdvancedTechFromFraction(race: string, techId: number) {
     setFractionConfigs(fractionConfigs.map((fc) =>
       fc.race !== race ? fc : { ...fc, advancedTechs: fc.advancedTechs.filter((id) => id !== techId) }
+    ));
+  }
+
+  function toggleStandardTech(race: string, techId: number) {
+    setFractionConfigs(fractionConfigs.map((fc) => {
+      if (fc.race !== race) return fc;
+      const has = fc.standardTechs.includes(techId);
+      const next = has
+        ? fc.standardTechs.filter((id) => id !== techId)
+        : [...fc.standardTechs, techId].sort((a, b) => a - b);
+      return { ...fc, standardTechs: next };
+    }));
+  }
+
+  function removeStandardTechFromFraction(race: string, techId: number) {
+    setFractionConfigs(fractionConfigs.map((fc) =>
+      fc.race !== race ? fc : { ...fc, standardTechs: fc.standardTechs.filter((id) => id !== techId) }
     ));
   }
 
@@ -487,8 +511,8 @@ export default function SearchForm({ onSearch, isLoading = false }: SearchFormPr
                 </button>
               </div>
 
-              {/* Add advanced tech button */}
-              <div className="mt-2">
+              {/* Add advanced tech + standard tech buttons */}
+              <div className="mt-2 flex gap-2">
                 <button
                   type="button"
                   onClick={() => setAdvancedTechDialogRace(fc.race)}
@@ -496,10 +520,17 @@ export default function SearchForm({ onSearch, isLoading = false }: SearchFormPr
                 >
                   Add advanced tech
                 </button>
+                <button
+                  type="button"
+                  onClick={() => setStandardTechDialogRace(fc.race)}
+                  className="px-3 h-9 bg-amber-600 text-white rounded-md hover:bg-amber-700 text-sm whitespace-nowrap"
+                >
+                  Add standard tech
+                </button>
               </div>
 
               {/* Condition chips */}
-              {(fc.conditions.length > 0 || fc.researchConditions.length > 0 || fc.advancedTechs.length > 0) && (
+              {(fc.conditions.length > 0 || fc.researchConditions.length > 0 || fc.advancedTechs.length > 0 || fc.standardTechs.length > 0) && (
                 <div className="mt-2 flex flex-wrap gap-1">
                   {fc.conditions.map((c, i) => (
                     <div
@@ -549,6 +580,22 @@ export default function SearchForm({ onSearch, isLoading = false }: SearchFormPr
                       <Image
                         src={`/advanced-techs/${ADVANCED_TECH_IMAGES[techId]}`}
                         alt={ADVANCED_TECH_LABELS[techId]}
+                        width={32}
+                        height={32}
+                      />
+                    </button>
+                  ))}
+                  {fc.standardTechs.map((techId) => (
+                    <button
+                      key={`st-${techId}`}
+                      type="button"
+                      title={`Remove ${STANDARD_TECH_LABELS[techId]}`}
+                      onClick={() => removeStandardTechFromFraction(fc.race, techId)}
+                      className="rounded-md overflow-hidden border-2 border-amber-400 hover:border-red-400 hover:opacity-70 transition-all"
+                    >
+                      <Image
+                        src={`/standart-techs/${STANDARD_TECH_IMAGES[techId]}`}
+                        alt={STANDARD_TECH_LABELS[techId]}
                         width={32}
                         height={32}
                       />
@@ -732,6 +779,60 @@ export default function SearchForm({ onSearch, isLoading = false }: SearchFormPr
                         src={`/advanced-techs/${ADVANCED_TECH_IMAGES[id]}`}
                         alt={ADVANCED_TECH_LABELS[id]}
                         width={72}
+                        height={72}
+                      />
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* Standard Tech Dialog */}
+      {standardTechDialogRace && (() => {
+        const fc = fractionConfigs.find((f) => f.race === standardTechDialogRace);
+        if (!fc) return null;
+        const techIds = Object.keys(STANDARD_TECH_LABELS).map(Number);
+        return (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+            onClick={() => setStandardTechDialogRace(null)}
+          >
+            <div
+              className="bg-white rounded-xl shadow-2xl p-6 max-w-lg w-full mx-4"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-base font-semibold text-gray-900">Select Standard Techs — {standardTechDialogRace}</h3>
+                <button
+                  type="button"
+                  onClick={() => setStandardTechDialogRace(null)}
+                  className="text-gray-400 hover:text-gray-600 text-xl leading-none"
+                >
+                  ✕
+                </button>
+              </div>
+              <div className="grid grid-cols-3 gap-4">
+                {techIds.map((id) => {
+                  const selected = fc.standardTechs.includes(id);
+                  return (
+                    <button
+                      key={id}
+                      type="button"
+                      title={STANDARD_TECH_LABELS[id]}
+                      onClick={() => toggleStandardTech(standardTechDialogRace, id)}
+                      className={`rounded-md overflow-hidden transition-all ${
+                        selected
+                          ? 'ring-4 ring-amber-500 ring-offset-2'
+                          : 'opacity-70 hover:opacity-100'
+                      }`}
+                    >
+                      <Image
+                        src={`/standart-techs/${STANDARD_TECH_IMAGES[id]}`}
+                        alt={STANDARD_TECH_LABELS[id]}
+                        width={120}
                         height={72}
                       />
                     </button>
