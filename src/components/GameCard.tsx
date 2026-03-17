@@ -1,6 +1,6 @@
 import Image from 'next/image';
 import type { GameResult, PlayerResult, StructureCondition, ResearchCondition, AdvancedTechCondition, StandardTechCondition } from '@/types/game';
-import { RACE_NAMES, getFinalScoringName, ADVANCED_TECH_LABELS, ADVANCED_TECH_IMAGES, STANDARD_TECH_LABELS } from '@/lib/gaia-constants';
+import { RACE_NAMES, getFinalScoringName, ADVANCED_TECH_LABELS, ADVANCED_TECH_IMAGES, STANDARD_TECH_LABELS, RESEARCH_TRACK_SHORT_NAMES } from '@/lib/gaia-constants';
 
 const RACE_BADGE_CLASS: Record<string, string> = {
   'Terrans':      'bg-blue-600 text-white',
@@ -81,6 +81,34 @@ function getMatchedConditionLabels(
     // Race-only condition: player matches but we show nothing extra
   }
 
+  return labels;
+}
+
+function getMatchedResearchLabels(
+  player: PlayerResult,
+  conditions: ResearchCondition[]
+): string[] {
+  const labels: string[] = [];
+  for (const cond of conditions) {
+    if (!cond.track || cond.minLevel == null) continue;
+    if (cond.race) {
+      const raceId = RACE_NAME_TO_ID[cond.race];
+      if (player.raceId !== raceId) continue;
+    }
+    const maxRound = cond.maxRound ?? 6;
+    const research: number[][] = player.researchData?.research ?? [];
+    const trackIdx = cond.track - 1;
+    let reachedInRound: number | null = null;
+    for (let i = 0; i < Math.min(maxRound, research.length); i++) {
+      if ((research[i]?.[trackIdx] ?? 0) >= cond.minLevel) {
+        reachedInRound = i + 1;
+        break;
+      }
+    }
+    if (reachedInRound === null) continue;
+    const trackName = RESEARCH_TRACK_SHORT_NAMES[cond.track] ?? `Track ${cond.track}`;
+    labels.push(`${trackName} R${reachedInRound}`);
+  }
   return labels;
 }
 
@@ -174,6 +202,7 @@ export default function GameCard({ game, structureConditions = [], researchCondi
       <div className="space-y-2">
         {sortedPlayers.map((player) => {
           const structureLabels = getMatchedConditionLabels(player, structureConditions);
+          const researchLabels = getMatchedResearchLabels(player, researchConditions);
           const techLabels = getMatchedAdvancedTechLabels(player, advancedTechConditions);
           const standardTechLabels = getMatchedStandardTechLabels(player, standardTechConditions);
           return (
@@ -196,23 +225,15 @@ export default function GameCard({ game, structureConditions = [], researchCondi
                 {structureLabels.map((label) => (
                   <span
                     key={label}
+                    className="text-xs px-2 py-0.5 rounded font-medium bg-blue-50 text-blue-800 border border-blue-200"
+                  >
+                    {label}
+                  </span>
+                ))}
+                {researchLabels.map((label) => (
+                  <span
+                    key={label}
                     className="text-xs px-2 py-0.5 rounded font-medium bg-green-100 text-green-800 border border-green-300"
-                  >
-                    {label}
-                  </span>
-                ))}
-                {techLabels.map((label) => (
-                  <span
-                    key={label}
-                    className="text-xs px-2 py-0.5 rounded font-medium bg-purple-100 text-purple-800 border border-purple-300"
-                  >
-                    {label}
-                  </span>
-                ))}
-                {standardTechLabels.map((label) => (
-                  <span
-                    key={label}
-                    className="text-xs px-2 py-0.5 rounded font-medium bg-amber-100 text-amber-800 border border-amber-300"
                   >
                     {label}
                   </span>

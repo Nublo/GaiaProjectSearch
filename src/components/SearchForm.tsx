@@ -516,14 +516,14 @@ export default function SearchForm({ onSearch, isLoading = false }: SearchFormPr
                 <button
                   type="button"
                   onClick={() => setAdvancedTechDialogRace(fc.race)}
-                  className="px-3 h-9 bg-purple-600 text-white rounded-md hover:bg-purple-700 text-sm whitespace-nowrap"
+                  className="px-3 h-9 bg-green-600 text-white rounded-md hover:bg-green-700 text-sm whitespace-nowrap"
                 >
                   Add advanced tech
                 </button>
                 <button
                   type="button"
                   onClick={() => setStandardTechDialogRace(fc.race)}
-                  className="px-3 h-9 bg-amber-600 text-white rounded-md hover:bg-amber-700 text-sm whitespace-nowrap"
+                  className="px-3 h-9 bg-green-600 text-white rounded-md hover:bg-green-700 text-sm whitespace-nowrap"
                 >
                   Add standard tech
                 </button>
