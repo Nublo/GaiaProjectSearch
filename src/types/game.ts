@@ -21,6 +21,12 @@ export interface PlayerResult {
   isWinner: boolean;
   buildingsData: { buildings: number[][] };
   researchData: { research: number[][] };
+  advancedTechsData: number[];
+}
+
+export interface AdvancedTechCondition {
+  race?: string;
+  techId: number;
 }
 
 export interface SearchRequest {
@@ -32,6 +38,7 @@ export interface SearchRequest {
   structureConditions: StructureCondition[];
   researchConditions: ResearchCondition[];
   finalScorings?: number[];
+  advancedTechConditions?: AdvancedTechCondition[];
 }
 
 export interface StructureCondition {

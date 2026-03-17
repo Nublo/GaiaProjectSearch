@@ -13,6 +13,7 @@ import {
   getBuildingName,
   FINAL_SCORING_DESC_TO_ID,
   RESEARCH_TRACK_SHORT_NAMES,
+  ADVANCED_TECH_LABELS,
 } from './gaia-constants';
 import { GetGameLogResponse, GameTableInfo, GetTableInfoResponse } from './bga-types';
 
@@ -120,6 +121,7 @@ export class GameLogParser {
             researchLevels: startResearch
               ? [startResearch[1], startResearch[2], startResearch[3], startResearch[4], startResearch[5], startResearch[6]]
               : [0, 0, 0, 0, 0, 0],
+            advancedTechs: [], // Will be populated when notifyGainTech events with coverupTechId != 0 are found
           });
 
           console.log(
@@ -222,6 +224,23 @@ export class GameLogParser {
               console.log(
                 `[Parser] ${playerName} built ${getBuildingName(buildingId)} in round ${currentRound}`
               );
+            }
+          }
+        }
+
+        // Parse advanced technology tile acquisitions (notifyGainTech events)
+        if (eventType === EventType.NOTIFY_GAIN_TECH) {
+          const args = event.args;
+          const coverupTechId = parseInt(args.coverupTechId);
+          if (coverupTechId !== 0) {
+            const techId = parseInt(args.techId);
+            const playerId = parseInt(args.playerId || args.player_id);
+            if (playerId && techId && ADVANCED_TECH_LABELS[techId] !== undefined) {
+              const player = players.find((p) => p.playerId === playerId);
+              if (player && !player.advancedTechs.includes(techId)) {
+                player.advancedTechs.push(techId);
+                console.log(`[Parser] ${args.player_name} took advanced tech ${techId} (${ADVANCED_TECH_LABELS[techId]})`);
+              }
             }
           }
         }

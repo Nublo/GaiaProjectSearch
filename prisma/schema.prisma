@@ -37,9 +37,10 @@ model Player {
   finalScore    Int     @map("final_score")
   playerElo     Int?    @map("player_elo")
   isWinner      Boolean @default(false) @map("is_winner")
-  buildingsData Json    @map("buildings_data")
-  researchData  Json    @map("research_data")
-  game          Game    @relation(fields: [tableId], references: [tableId], onDelete: Cascade)
+  buildingsData      Json    @map("buildings_data")
+  researchData       Json    @map("research_data")
+  advancedTechsData  Int[]   @default([]) @map("advanced_techs_data")
+  game               Game    @relation(fields: [tableId], references: [tableId], onDelete: Cascade)
 
   @@index([playerName])
   @@index([raceId])
@@ -53,5 +54,6 @@ model Player {
   @@index([playerElo, finalScore])
   @@index([buildingsData], map: "players_buildings_data_gin_idx", type: Gin)
   @@index([researchData], map: "players_research_data_gin_idx", type: Gin)
+  @@index([advancedTechsData], map: "players_advanced_techs_data_gin_idx", type: Gin)
   @@map("players")
 }

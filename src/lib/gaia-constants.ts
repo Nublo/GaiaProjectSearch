@@ -121,6 +121,9 @@ export enum EventType {
 
   // Scoring
   NOTIFY_SCORE = 'notifyScore', // Final scoring events (used to detect active final scoring missions)
+
+  // Technology tiles
+  NOTIFY_GAIN_TECH = 'notifyGainTech', // Gaining a technology tile (coverupTechId != 0 means advanced tech)
 }
 
 // ============================================================================
@@ -186,6 +189,7 @@ export interface PlayerRaceMapping {
   buildings: number[][]; // buildings[round] = [buildingId1, buildingId2, ...]
   research: number[][];    // research[roundIdx][trackIdx] = absolute level at end of that round (0-indexed)
   researchLevels: number[]; // [t1..t6] — current absolute levels during parsing, tracks 1-6 at indices 0-5
+  advancedTechs: number[]; // sorted array of advanced tech tile IDs (10-24) taken by this player
 }
 
 // Short display names for research tracks (for UI chips and labels)
@@ -196,6 +200,44 @@ export const RESEARCH_TRACK_SHORT_NAMES: Record<number, string> = {
   4: 'Gaia Forming',
   5: 'Economy',
   6: 'Science',
+};
+
+// Advanced technology tile labels (IDs 10-24)
+export const ADVANCED_TECH_LABELS: Record<number, string> = {
+  10: '+1Q5c',
+  11: '+3ore',
+  12: '+3knowledge',
+  13: '2vpMine',
+  14: '1oreSector',
+  15: '2vpSector',
+  16: '2vpGaia',
+  17: '5vpFederation',
+  18: '4vpTradingStation',
+  19: '+3vpFederation',
+  20: '+3vpLaboratory',
+  21: '+1vpPlanetType',
+  22: '+2vpKnowledgeStep',
+  23: '+3vpMine',
+  24: '+3vpTradingStation',
+};
+
+// Filenames for advanced tech images in /public/advanced-techs/
+export const ADVANCED_TECH_IMAGES: Record<number, string> = {
+  10: '10_(+1Q5c).webp',
+  11: '11_(+3ore).webp',
+  12: '12_(+3knowledge).webp',
+  13: '13_(2vpMine).webp',
+  14: '14_(1oreSector).webp',
+  15: '15_(2vpSector).webp',
+  16: '16_(2vpGaia).webp',
+  17: '17_(5vpFederation).webp',
+  18: '18_(4vpTradingStation).webp',
+  19: '19_(+3vpFederation).webp',
+  20: '20_(+3vpLaboratory).webp',
+  21: '21_(+1vpPlanetType).webp',
+  22: '22_(+2vpKnowledgeStep).webp',
+  23: '23_(+3vpMine).webp',
+  24: '24_(+3vpTradingStation).webp',
 };
 
 export interface BuildingAction {

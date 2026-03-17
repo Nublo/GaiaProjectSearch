@@ -1,7 +1,7 @@
 import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/db';
 import { RACE_NAMES } from '@/lib/gaia-constants';
-import type { SearchRequest, GameResult, ResearchCondition } from '@/types/game';
+import type { SearchRequest, GameResult, ResearchCondition, AdvancedTechCondition } from '@/types/game';
 
 const RACE_NAME_TO_ID: Record<string, number> = Object.fromEntries(
   Object.entries(RACE_NAMES).map(([id, name]) => [name, Number(id)])
@@ -26,6 +26,7 @@ export async function searchGames(req: SearchRequest): Promise<GameResult[]> {
     structureConditions = [],
     researchConditions = [],
     finalScorings = [],
+    advancedTechConditions = [],
   } = req;
 
   const andConditions: Prisma.GameWhereInput[] = [];
@@ -172,6 +173,44 @@ export async function searchGames(req: SearchRequest): Promise<GameResult[]> {
     }
   }
 
+  if (advancedTechConditions.length > 0) {
+    const existsFragments: Prisma.Sql[] = [];
+
+    for (const cond of advancedTechConditions) {
+      const techId = cond.techId;
+      const raceId = cond.race ? RACE_NAME_TO_ID[cond.race] : undefined;
+
+      if (raceId !== undefined) {
+        existsFragments.push(Prisma.sql`
+          EXISTS (
+            SELECT 1 FROM players p WHERE p.table_id = g.table_id
+            AND p.race_id = ${raceId}
+            AND p.advanced_techs_data @> ARRAY[${techId}::int]
+          )
+        `);
+      } else {
+        existsFragments.push(Prisma.sql`
+          EXISTS (
+            SELECT 1 FROM players p WHERE p.table_id = g.table_id
+            AND p.advanced_techs_data @> ARRAY[${techId}::int]
+          )
+        `);
+      }
+    }
+
+    if (existsFragments.length > 0) {
+      const whereClause = Prisma.join(existsFragments, ' AND ');
+      const matchingGames = await prisma.$queryRaw<{ table_id: number }[]>`
+        SELECT DISTINCT g.table_id FROM games g WHERE ${whereClause}
+      `;
+      const matchingTableIds = matchingGames.map((r) => r.table_id);
+
+      if (matchingTableIds.length === 0) return [];
+
+      andConditions.push({ tableId: { in: matchingTableIds } });
+    }
+  }
+
   const games = await prisma.game.findMany({
     where: andConditions.length > 0 ? { AND: andConditions } : {},
     select: {
@@ -193,6 +232,7 @@ export async function searchGames(req: SearchRequest): Promise<GameResult[]> {
           isWinner: true,
           buildingsData: true,
           researchData: true,
+          advancedTechsData: true,
         },
       },
     },

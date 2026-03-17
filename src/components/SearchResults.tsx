@@ -1,7 +1,7 @@
 import Image from 'next/image';
 import GameCard from './GameCard';
-import type { GameResult, SearchRequest, StructureCondition, ResearchCondition } from '@/types/game';
-import { getFinalScoringName, RESEARCH_TRACK_SHORT_NAMES } from '@/lib/gaia-constants';
+import type { GameResult, SearchRequest, StructureCondition, ResearchCondition, AdvancedTechCondition } from '@/types/game';
+import { getFinalScoringName, RESEARCH_TRACK_SHORT_NAMES, ADVANCED_TECH_LABELS, ADVANCED_TECH_IMAGES } from '@/lib/gaia-constants';
 
 const STRUCTURE_LABELS: Record<string, string> = {
   'mine': 'Mine',
@@ -61,18 +61,23 @@ function FractionFilterChip({ children }: { children: React.ReactNode }) {
 }
 
 function SearchCriteriaSummary({ req }: { req: SearchRequest }) {
-  // Group structure + research conditions by race
-  const fractionMap = new Map<string, { structures: StructureCondition[]; research: ResearchCondition[] }>();
+  // Group structure + research + advanced tech conditions by race
+  const fractionMap = new Map<string, { structures: StructureCondition[]; research: ResearchCondition[]; techs: AdvancedTechCondition[] }>();
 
   for (const cond of req.structureConditions ?? []) {
     const key = cond.race ?? '';
-    if (!fractionMap.has(key)) fractionMap.set(key, { structures: [], research: [] });
+    if (!fractionMap.has(key)) fractionMap.set(key, { structures: [], research: [], techs: [] });
     fractionMap.get(key)!.structures.push(cond);
   }
   for (const cond of req.researchConditions ?? []) {
     const key = cond.race ?? '';
-    if (!fractionMap.has(key)) fractionMap.set(key, { structures: [], research: [] });
+    if (!fractionMap.has(key)) fractionMap.set(key, { structures: [], research: [], techs: [] });
     fractionMap.get(key)!.research.push(cond);
+  }
+  for (const cond of req.advancedTechConditions ?? []) {
+    const key = cond.race ?? '';
+    if (!fractionMap.has(key)) fractionMap.set(key, { structures: [], research: [], techs: [] });
+    fractionMap.get(key)!.techs.push(cond);
   }
 
   const hasFractionFilters = fractionMap.size > 0;
@@ -106,7 +111,7 @@ function SearchCriteriaSummary({ req }: { req: SearchRequest }) {
       )}
 
       {/* Fraction-grouped filters */}
-      {Array.from(fractionMap.entries()).map(([race, { structures, research }]) => (
+      {Array.from(fractionMap.entries()).map(([race, { structures, research, techs }]) => (
         <div key={race || '__any__'} className="flex items-center gap-2 flex-wrap">
           {race && RACE_IMAGE_FILES[race] && (
             <Image
@@ -125,6 +130,18 @@ function SearchCriteriaSummary({ req }: { req: SearchRequest }) {
           {research.map((cond, i) => (
             <span key={`r-${i}`} className="inline-flex items-center gap-1.5 px-3 py-1 bg-green-100 border border-green-300 rounded-full text-sm text-green-800">
               {researchChipLabel(cond)}
+            </span>
+          ))}
+          {techs.map((cond, i) => (
+            <span key={`t-${i}`} className="inline-flex items-center gap-1.5 px-3 py-1 bg-purple-50 border border-purple-300 rounded-full text-sm text-purple-800">
+              <Image
+                src={`/advanced-techs/${ADVANCED_TECH_IMAGES[cond.techId]}`}
+                alt={ADVANCED_TECH_LABELS[cond.techId]}
+                width={24}
+                height={24}
+                className="rounded"
+              />
+              {ADVANCED_TECH_LABELS[cond.techId]}
             </span>
           ))}
         </div>
@@ -210,6 +227,7 @@ export default function SearchResults({ games, total, isLoading = false, searchR
               structureConditions={searchRequest?.structureConditions}
               researchConditions={searchRequest?.researchConditions}
               highlightedFinalScorings={searchRequest?.finalScorings}
+              advancedTechConditions={searchRequest?.advancedTechConditions}
             />
           ))}
         </div>
