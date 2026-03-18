@@ -53,8 +53,6 @@ model Player {
   @@index([raceId, finalScore])
   @@index([tableId, raceId])
   @@index([playerElo, finalScore])
-  @@index([buildingsData], map: "players_buildings_data_gin_idx", type: Gin)
-  @@index([researchData], map: "players_research_data_gin_idx", type: Gin)
   @@index([advancedTechsData], map: "players_advanced_techs_data_gin_idx", type: Gin)
   @@index([standardTechsData], map: "players_standard_techs_data_gin_idx", type: Gin)
   @@map("players")
