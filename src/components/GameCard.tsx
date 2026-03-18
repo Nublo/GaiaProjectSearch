@@ -107,7 +107,7 @@ function getMatchedResearchLabels(
     }
     if (reachedInRound === null) continue;
     const trackName = RESEARCH_TRACK_SHORT_NAMES[cond.track] ?? `Track ${cond.track}`;
-    labels.push(`${trackName} R${reachedInRound}`);
+    labels.push(`${trackName} Level ${cond.minLevel}: R${reachedInRound}`);
   }
   return labels;
 }
