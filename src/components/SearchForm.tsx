@@ -57,6 +57,7 @@ function getRaceFile(name: string): string {
 export default function SearchForm({ onSearch, isLoading = false }: SearchFormProps) {
   const [criteria, setCriteria] = useState<FormState>({});
   const [selectedLevel, setSelectedLevel] = useState<string>('');
+  const [sortBy, setSortBy] = useState<string>('');
 
   const [fractionConfigs, setFractionConfigs] = useState<FractionConfig[]>([]);
   const [advancedTechDialogRace, setAdvancedTechDialogRace] = useState<string | null>(null);
@@ -118,12 +119,14 @@ export default function SearchForm({ onSearch, isLoading = false }: SearchFormPr
       finalScorings: finalScoringConditions,
       advancedTechConditions,
       standardTechConditions,
+      sortBy: (sortBy as SearchRequest['sortBy']) || undefined,
     });
   };
 
   const handleReset = () => {
     setCriteria({});
     setSelectedLevel('');
+    setSortBy('');
     setFractionConfigs([]);
     setAdvancedTechDialogRace(null);
     setStandardTechDialogRace(null);
@@ -309,6 +312,25 @@ export default function SearchForm({ onSearch, isLoading = false }: SearchFormPr
                 );
               })}
             </div>
+          </div>
+
+          {/* Sort by */}
+          <div className="md:col-span-2">
+            <label htmlFor="sortByDropdown" className="block text-sm font-medium text-gray-700 mb-2">
+              Sort by
+            </label>
+            <select
+              id="sortByDropdown"
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              className={inputClassName}
+            >
+              <option value="">No sorting</option>
+              <option value="qicPoints">QIC Points</option>
+              <option value="techPoints">Tech Points</option>
+              <option value="totalScoredPoints">Scored Points</option>
+              <option value="finalScore">Total Points</option>
+            </select>
           </div>
 
           {/* Player ELO (min) */}

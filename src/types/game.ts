@@ -23,6 +23,9 @@ export interface PlayerResult {
   researchData: { research: number[][] };
   advancedTechsData: number[];
   standardTechsData: number[];
+  qicPoints: number;
+  techPoints: number;
+  totalScoredPoints: number;
 }
 
 export interface AdvancedTechCondition {
@@ -46,6 +49,7 @@ export interface SearchRequest {
   finalScorings?: number[];
   advancedTechConditions?: AdvancedTechCondition[];
   standardTechConditions?: StandardTechCondition[];
+  sortBy?: 'qicPoints' | 'techPoints' | 'totalScoredPoints' | 'finalScore';
 }
 
 export interface StructureCondition {

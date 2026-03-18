@@ -257,32 +257,97 @@ export async function searchGames(req: SearchRequest): Promise<SearchGamesResult
     }
   }
 
-  const games = await prisma.game.findMany({
-    where: andConditions.length > 0 ? { AND: andConditions } : {},
-    select: {
-      id: true,
-      tableId: true,
-      playerCount: true,
-      winnerName: true,
-      minPlayerElo: true,
-      finalScorings: true,
-      players: {
-        select: {
-          id: true,
-          playerId: true,
-          playerName: true,
-          raceId: true,
-          raceName: true,
-          finalScore: true,
-          playerElo: true,
-          isWinner: true,
-          buildingsData: true,
-          researchData: true,
-          advancedTechsData: true,
-          standardTechsData: true,
-        },
+  const GAME_SELECT = {
+    id: true,
+    tableId: true,
+    playerCount: true,
+    winnerName: true,
+    minPlayerElo: true,
+    finalScorings: true,
+    players: {
+      select: {
+        id: true,
+        playerId: true,
+        playerName: true,
+        raceId: true,
+        raceName: true,
+        finalScore: true,
+        playerElo: true,
+        isWinner: true,
+        buildingsData: true,
+        researchData: true,
+        advancedTechsData: true,
+        standardTechsData: true,
+        qicPoints: true,
+        techPoints: true,
+        totalScoredPoints: true,
       },
     },
+  } as const;
+
+  const where = andConditions.length > 0 ? { AND: andConditions } : {};
+
+  if (req.sortBy) {
+    const SORT_COLUMN: Record<string, string> = {
+      qicPoints: 'qic_points',
+      techPoints: 'tech_points',
+      totalScoredPoints: 'total_scored_points',
+      finalScore: 'final_score',
+    };
+    const column = SORT_COLUMN[req.sortBy];
+
+    // Collect distinct race IDs from all fraction conditions
+    const allConditionRaces = [
+      ...(req.structureConditions ?? []).map((c) => c.race),
+      ...(req.researchConditions ?? []).map((c) => c.race),
+      ...(req.advancedTechConditions ?? []).map((c) => c.race),
+      ...(req.standardTechConditions ?? []).map((c) => c.race),
+    ].filter((r): r is string => !!r);
+    const filteredRaceIds = [...new Set(allConditionRaces)]
+      .map((name) => RACE_NAME_TO_ID[name])
+      .filter((id): id is number => id !== undefined);
+
+    // Step 1: get all filtered tableIds (no limit — we need to sort across the full result set)
+    const filteredGames = await prisma.game.findMany({ where, select: { tableId: true } });
+    const filteredIds = filteredGames.map((g) => g.tableId);
+    if (filteredIds.length === 0) return { games: [], queryMs: Math.round(performance.now() - dbStart) };
+
+    // Step 2: sort by MAX(column) scoped to filtered races (if any), take top 100
+    const sorted = filteredRaceIds.length > 0
+      ? await prisma.$queryRaw<{ table_id: number }[]>`
+          SELECT p.table_id
+          FROM players p
+          WHERE p.table_id = ANY(${filteredIds}::int[])
+          AND p.race_id = ANY(${filteredRaceIds}::int[])
+          GROUP BY p.table_id
+          ORDER BY MAX(p.${Prisma.raw(column)}) DESC
+          LIMIT 100
+        `
+      : await prisma.$queryRaw<{ table_id: number }[]>`
+          SELECT p.table_id
+          FROM players p
+          WHERE p.table_id = ANY(${filteredIds}::int[])
+          GROUP BY p.table_id
+          ORDER BY MAX(p.${Prisma.raw(column)}) DESC
+          LIMIT 100
+        `;
+    const sortedIds = sorted.map((r) => r.table_id);
+    if (sortedIds.length === 0) return { games: [], queryMs: Math.round(performance.now() - dbStart) };
+
+    // Step 3: fetch full game data and restore sort order
+    const gamesData = await prisma.game.findMany({
+      where: { tableId: { in: sortedIds } },
+      select: GAME_SELECT,
+    });
+    const gamesById = new Map(gamesData.map((g) => [g.tableId, g]));
+    const games = sortedIds.map((id) => gamesById.get(id)).filter((g): g is NonNullable<typeof g> => g != null);
+
+    return { games: games as GameResult[], queryMs: Math.round(performance.now() - dbStart) };
+  }
+
+  const games = await prisma.game.findMany({
+    where,
+    select: GAME_SELECT,
     take: 100,
     orderBy: { tableId: 'desc' },
   });

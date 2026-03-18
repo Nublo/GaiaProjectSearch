@@ -1,5 +1,5 @@
 import Image from 'next/image';
-import type { GameResult, PlayerResult, StructureCondition, ResearchCondition, AdvancedTechCondition, StandardTechCondition } from '@/types/game';
+import type { GameResult, PlayerResult, SearchRequest, StructureCondition, ResearchCondition, AdvancedTechCondition, StandardTechCondition } from '@/types/game';
 import { RACE_NAMES, getFinalScoringName, ADVANCED_TECH_LABELS, ADVANCED_TECH_IMAGES, STANDARD_TECH_LABELS, RESEARCH_TRACK_SHORT_NAMES } from '@/lib/gaia-constants';
 
 const RACE_BADGE_CLASS: Record<string, string> = {
@@ -146,6 +146,12 @@ function getMatchedStandardTechLabels(
   return labels;
 }
 
+const SORT_LABEL: Record<string, string> = {
+  qicPoints: 'QIC',
+  techPoints: 'Tech',
+  totalScoredPoints: 'Scored',
+};
+
 interface GameCardProps {
   game: GameResult;
   structureConditions?: StructureCondition[];
@@ -153,10 +159,13 @@ interface GameCardProps {
   highlightedFinalScorings?: number[];
   advancedTechConditions?: AdvancedTechCondition[];
   standardTechConditions?: StandardTechCondition[];
+  sortBy?: SearchRequest['sortBy'];
 }
 
-export default function GameCard({ game, structureConditions = [], researchConditions = [], highlightedFinalScorings = [], advancedTechConditions = [], standardTechConditions = [] }: GameCardProps) {
-  const sortedPlayers = [...game.players].sort((a, b) => b.finalScore - a.finalScore);
+export default function GameCard({ game, structureConditions = [], researchConditions = [], highlightedFinalScorings = [], advancedTechConditions = [], standardTechConditions = [], sortBy }: GameCardProps) {
+  const sortedPlayers = [...game.players].sort((a, b) =>
+    sortBy ? b[sortBy] - a[sortBy] : b.finalScore - a.finalScore
+  );
 
   return (
     <div className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
@@ -240,6 +249,11 @@ export default function GameCard({ game, structureConditions = [], researchCondi
                 ))}
               </div>
               <div className="flex items-center gap-3 text-sm text-gray-600">
+                {sortBy && sortBy !== 'finalScore' && (
+                  <span className="text-xs font-medium text-indigo-700 bg-indigo-50 border border-indigo-200 px-2 py-0.5 rounded">
+                    {SORT_LABEL[sortBy]}: {player[sortBy]}
+                  </span>
+                )}
                 <span>
                   <span className="font-medium">{player.finalScore}</span> pts
                 </span>

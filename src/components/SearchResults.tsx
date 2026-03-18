@@ -43,6 +43,13 @@ function researchChipLabel(cond: ResearchCondition): string {
   return parts.join(' ');
 }
 
+const SORT_LABELS: Record<string, string> = {
+  qicPoints: 'QIC Points',
+  techPoints: 'Tech Points',
+  totalScoredPoints: 'Scored Points',
+  finalScore: 'Total Points',
+};
+
 function Chip({ label, value }: { label: string; value: string }) {
   return (
     <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-50 border border-blue-200 rounded-full text-sm text-blue-800">
@@ -87,7 +94,7 @@ function SearchCriteriaSummary({ req }: { req: SearchRequest }) {
 
   const hasFractionFilters = fractionMap.size > 0 || (req.standardTechConditions ?? []).length > 0;
   const hasOtherFilters =
-    req.winnerRace || req.winnerPlayerName || req.minPlayerElo ||
+    req.winnerRace || req.winnerPlayerName || req.minPlayerElo || req.sortBy ||
     req.playerCounts.length > 0 || req.playerNames.length > 0 || (req.finalScorings ?? []).length > 0;
 
   if (!hasFractionFilters && !hasOtherFilters) {
@@ -112,6 +119,7 @@ function SearchCriteriaSummary({ req }: { req: SearchRequest }) {
           {req.playerCounts.length > 0 && <Chip label="Players" value={req.playerCounts.join(' or ')} />}
           {req.playerNames.map((name) => <Chip key={name} label="Player" value={name} />)}
           {(req.finalScorings ?? []).map((id) => <Chip key={id} label="Final Scoring" value={getFinalScoringName(id)} />)}
+          {req.sortBy && <Chip label="Sort by" value={SORT_LABELS[req.sortBy] ?? req.sortBy} />}
         </div>
       )}
 
@@ -246,6 +254,7 @@ export default function SearchResults({ games, total, isLoading = false, searchR
               highlightedFinalScorings={searchRequest?.finalScorings}
               advancedTechConditions={searchRequest?.advancedTechConditions}
               standardTechConditions={searchRequest?.standardTechConditions}
+              sortBy={searchRequest?.sortBy}
             />
           ))}
         </div>
