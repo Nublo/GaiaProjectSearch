@@ -84,6 +84,8 @@ export class GameLogParser {
     });
 
     let currentRound = 0;
+    let pendingQicActionPlayerId: number | null = null;
+    let pendingTechGainPlayerId: number | null = null;
 
     // Parse each log packet
     for (const packet of logs) {
@@ -116,6 +118,7 @@ export class GameLogParser {
             raceId,
             raceName: getRaceName(raceId),
             finalScore: 0, // Will be updated when parsing game end
+            startingScore: event.args.player?.score ?? 10,
             playerElo: playerEloMap.get(playerId) || null, // Get normalized ELO from table info
             buildings: [], // Will be populated as buildings are built
             research: [],  // Will be populated at each notifyRoundEnd with absolute level snapshots
@@ -124,6 +127,9 @@ export class GameLogParser {
               : [0, 0, 0, 0, 0, 0],
             advancedTechs: [], // Will be populated when notifyGainTech events with coverupTechId != 0 are found
             standardTechs: [], // Will be populated when notifyGainTech events with coverupTechId === 0 are found
+            qicPoints: 0,
+            techPoints: 0,
+            totalScoredPoints: 0,
           });
 
           console.log(
@@ -179,10 +185,53 @@ export class GameLogParser {
         }
 
         // Collect final scoring mission types from notifyScore events
+        // Also capture round-end tech tile scoring
         if (eventType === EventType.NOTIFY_SCORE) {
           const desc = event.args?.desc;
           if (desc && FINAL_SCORING_DESC_TO_ID[desc] !== undefined) {
             finalScoringDescs.add(desc);
+          }
+          if (event.log?.startsWith('Technology:')) {
+            const playerId = parseInt(event.args?.playerId);
+            const vp = parseInt(event.args?.vp) || 0;
+            const player = players.find((p) => p.playerId === playerId);
+            if (player && vp > 0) {
+              player.techPoints += vp;
+            }
+          }
+        }
+
+        // Track QIC actions (actionId 6 = planet diversity, 7 = rescore federation)
+        if (eventType === EventType.NOTIFY_ACTION) {
+          const actionId = parseInt(event.args?.actionId);
+          if (actionId === 6 || actionId === 7) {
+            pendingQicActionPlayerId = parseInt(event.args?.playerId);
+          }
+        }
+
+        // Track tech gains (any tech tile — sets pending state for next notifyGainResource)
+        if (eventType === EventType.NOTIFY_GAIN_TECH) {
+          pendingTechGainPlayerId = parseInt(event.args?.playerId || event.args?.player_id);
+        }
+
+        // Consume pending QIC and tech gain states on resource gain
+        if (eventType === EventType.NOTIFY_GAIN_RESOURCE) {
+          const playerId = parseInt(event.args?.playerId || event.args?.player_id);
+          const gainStr: string = event.args?.gainStr ?? '';
+          const vpMatch = gainStr.match(/\[VP(\d+)\]/);
+          const vp = vpMatch ? parseInt(vpMatch[1]) : 0;
+
+          if (pendingQicActionPlayerId === playerId) {
+            if (vp > 0) {
+              const player = players.find((p) => p.playerId === playerId);
+              if (player) player.qicPoints += vp;
+            }
+            pendingQicActionPlayerId = null;
+          }
+          if (pendingTechGainPlayerId === playerId) {
+            const player = players.find((p) => p.playerId === playerId);
+            if (player) player.techPoints += vp;
+            pendingTechGainPlayerId = null;
           }
         }
 
@@ -255,6 +304,11 @@ export class GameLogParser {
           }
         }
       }
+    }
+
+    // Compute totalScoredPoints for each player
+    for (const player of players) {
+      player.totalScoredPoints = player.finalScore - player.startingScore;
     }
 
     // Determine winner (player with highest score)

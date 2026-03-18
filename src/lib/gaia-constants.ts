@@ -124,6 +124,10 @@ export enum EventType {
 
   // Technology tiles
   NOTIFY_GAIN_TECH = 'notifyGainTech', // Gaining a technology tile (coverupTechId != 0 means advanced tech)
+
+  // QIC actions and resource gains
+  NOTIFY_ACTION = 'notifyAction',
+  NOTIFY_GAIN_RESOURCE = 'notifyGainResource',
 }
 
 // ============================================================================
@@ -185,12 +189,16 @@ export interface PlayerRaceMapping {
   raceId: number;
   raceName: string;
   finalScore: number;
+  startingScore: number;   // VP at game start (from notifyChooseRace)
   playerElo: number | null; // Normalized ELO (with BGA offset subtracted)
   buildings: number[][]; // buildings[round] = [buildingId1, buildingId2, ...]
   research: number[][];    // research[roundIdx][trackIdx] = absolute level at end of that round (0-indexed)
   researchLevels: number[]; // [t1..t6] — current absolute levels during parsing, tracks 1-6 at indices 0-5
   advancedTechs: number[]; // sorted array of advanced tech tile IDs (10-24) taken by this player
   standardTechs: number[]; // sorted array of standard tech tile IDs (1-9) taken by this player
+  qicPoints: number;       // VP from 2-QIC (planet diversity) and 3-QIC (rescore federation) actions
+  techPoints: number;      // VP from technology tile gains and round-end tech scoring
+  totalScoredPoints: number; // finalScore - startingScore
 }
 
 // Short display names for research tracks (for UI chips and labels)

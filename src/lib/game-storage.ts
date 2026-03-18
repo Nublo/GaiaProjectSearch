@@ -47,6 +47,9 @@ export async function storeGame(parsedGame: ParsedGameData) {
             },
             advancedTechsData: [...player.advancedTechs].sort((a, b) => a - b),
             standardTechsData: [...player.standardTechs].sort((a, b) => a - b),
+            qicPoints: player.qicPoints,
+            techPoints: player.techPoints,
+            totalScoredPoints: player.totalScoredPoints,
           }
         })
       )
