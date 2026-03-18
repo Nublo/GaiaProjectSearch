@@ -5,7 +5,7 @@ import type { SearchRequest } from '@/types/game';
 export async function POST(request: NextRequest) {
   try {
     const body: SearchRequest = await request.json();
-    const games = await searchGames(body);
+    const { games } = await searchGames(body);
     return NextResponse.json({ games, total: games.length });
   } catch (error) {
     console.error('Search error:', error);

@@ -16,7 +16,12 @@ const STRUCTURE_TO_ID: Record<string, number> = {
   'planetary-institute': 9,
 };
 
-export async function searchGames(req: SearchRequest): Promise<GameResult[]> {
+interface SearchGamesResult {
+  games: GameResult[];
+  queryMs: number;
+}
+
+export async function searchGames(req: SearchRequest): Promise<SearchGamesResult> {
   const {
     winnerRace,
     winnerPlayerName,
@@ -75,6 +80,8 @@ export async function searchGames(req: SearchRequest): Promise<GameResult[]> {
     }
   }
 
+  const dbStart = performance.now();
+
   if (buildingConditions.length > 0) {
     const existsFragments: Prisma.Sql[] = [];
 
@@ -120,7 +127,7 @@ export async function searchGames(req: SearchRequest): Promise<GameResult[]> {
       `;
       const matchingTableIds = matchingGames.map((r) => r.table_id);
 
-      if (matchingTableIds.length === 0) return [];
+      if (matchingTableIds.length === 0) return { games: [], queryMs: Math.round(performance.now() - dbStart) };
 
       andConditions.push({ tableId: { in: matchingTableIds } });
     }
@@ -168,7 +175,7 @@ export async function searchGames(req: SearchRequest): Promise<GameResult[]> {
       `;
       const matchingTableIds = matchingGames.map((r) => r.table_id);
 
-      if (matchingTableIds.length === 0) return [];
+      if (matchingTableIds.length === 0) return { games: [], queryMs: Math.round(performance.now() - dbStart) };
 
       andConditions.push({ tableId: { in: matchingTableIds } });
     }
@@ -206,7 +213,7 @@ export async function searchGames(req: SearchRequest): Promise<GameResult[]> {
       `;
       const matchingTableIds = matchingGames.map((r) => r.table_id);
 
-      if (matchingTableIds.length === 0) return [];
+      if (matchingTableIds.length === 0) return { games: [], queryMs: Math.round(performance.now() - dbStart) };
 
       andConditions.push({ tableId: { in: matchingTableIds } });
     }
@@ -244,7 +251,7 @@ export async function searchGames(req: SearchRequest): Promise<GameResult[]> {
       `;
       const matchingTableIds = matchingGames.map((r) => r.table_id);
 
-      if (matchingTableIds.length === 0) return [];
+      if (matchingTableIds.length === 0) return { games: [], queryMs: Math.round(performance.now() - dbStart) };
 
       andConditions.push({ tableId: { in: matchingTableIds } });
     }
@@ -280,5 +287,5 @@ export async function searchGames(req: SearchRequest): Promise<GameResult[]> {
     orderBy: { tableId: 'desc' },
   });
 
-  return games as GameResult[];
+  return { games: games as GameResult[], queryMs: Math.round(performance.now() - dbStart) };
 }

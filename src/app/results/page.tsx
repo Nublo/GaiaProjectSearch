@@ -28,7 +28,9 @@ export default async function ResultsPage({
     // malformed q param — fall back to no filters
   }
 
-  const games = await searchGames(searchRequest);
+  const pageStart = performance.now();
+  const { games, queryMs } = await searchGames(searchRequest);
+  const renderMs = Math.round(performance.now() - pageStart);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 py-8">
@@ -42,6 +44,12 @@ export default async function ResultsPage({
           total={games.length}
           searchRequest={searchRequest}
         />
+
+        <div className="w-full max-w-4xl mx-auto px-6 pt-1 pb-2">
+          <p className="text-xs text-gray-400 text-center">
+            Rendered in {renderMs}ms &middot; DB: {queryMs}ms
+          </p>
+        </div>
       </div>
     </div>
   );
