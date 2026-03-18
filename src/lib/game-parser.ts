@@ -304,6 +304,10 @@ export class GameLogParser {
           }
         }
       }
+
+      // Pending states are always resolved within a single packet — clear after each packet
+      pendingQicActionPlayerId = null;
+      pendingTechGainPlayerId = null;
     }
 
     // Compute totalScoredPoints for each player
