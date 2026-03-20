@@ -50,6 +50,7 @@ export async function storeGame(parsedGame: ParsedGameData) {
             qicPoints: player.qicPoints,
             techPoints: player.techPoints,
             totalScoredPoints: player.totalScoredPoints,
+            factionCost: player.factionCost,
           }
         })
       )

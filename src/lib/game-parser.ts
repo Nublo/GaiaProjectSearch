@@ -130,6 +130,7 @@ export class GameLogParser {
             qicPoints: 0,
             techPoints: 0,
             totalScoredPoints: 0,
+            factionCost: 0,
           });
 
           console.log(
@@ -276,6 +277,17 @@ export class GameLogParser {
                 `[Parser] ${playerName} built ${getBuildingName(buildingId)} in round ${currentRound}`
               );
             }
+          }
+        }
+
+        // Parse faction auction cost ("wins the auction for" events)
+        if (eventType === EventType.NOTIFY_GENERIC) {
+          const log: string = event.log ?? '';
+          if (log.includes('wins the auction for')) {
+            const playerName = event.args?.player_name;
+            const vp = parseInt(event.args?.vp) || 0;
+            const player = players.find((p) => p.playerName === playerName);
+            if (player) player.factionCost = vp;
           }
         }
 

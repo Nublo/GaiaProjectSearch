@@ -128,6 +128,9 @@ export enum EventType {
   // QIC actions and resource gains
   NOTIFY_ACTION = 'notifyAction',
   NOTIFY_GAIN_RESOURCE = 'notifyGainResource',
+
+  // Generic notifications (e.g. auction results)
+  NOTIFY_GENERIC = 'notifyGeneric',
 }
 
 // ============================================================================
@@ -199,6 +202,7 @@ export interface PlayerRaceMapping {
   qicPoints: number;       // VP from 2-QIC (planet diversity) and 3-QIC (rescore federation) actions
   techPoints: number;      // VP from technology tile gains and round-end tech scoring
   totalScoredPoints: number; // finalScore - startingScore
+  factionCost: number;     // VP bid cost in auction/draft mode (0 if no auction)
 }
 
 // Short display names for research tracks (for UI chips and labels)

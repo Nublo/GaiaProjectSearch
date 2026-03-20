@@ -254,6 +254,7 @@ export default function GameCard({ game, structureConditions = [], researchCondi
                     {SORT_LABEL[sortBy]}: {player[sortBy]}
                   </span>
                 )}
+                <span className="text-xs text-gray-500">Cost: {player.factionCost}vp</span>
                 <span>
                   <span className="font-medium">{player.finalScore}</span> pts
                 </span>

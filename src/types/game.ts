@@ -26,6 +26,7 @@ export interface PlayerResult {
   qicPoints: number;
   techPoints: number;
   totalScoredPoints: number;
+  factionCost: number;
 }
 
 export interface AdvancedTechCondition {

@@ -44,6 +44,7 @@ model Player {
   qicPoints         Int     @default(0) @map("qic_points")
   techPoints        Int     @default(0) @map("tech_points")
   totalScoredPoints Int     @default(0) @map("total_scored_points")
+  factionCost       Int     @default(0) @map("faction_cost")
   game               Game    @relation(fields: [tableId], references: [tableId], onDelete: Cascade)
 
   @@index([playerName])
@@ -61,5 +62,6 @@ model Player {
   @@index([qicPoints])
   @@index([techPoints])
   @@index([totalScoredPoints])
+  @@index([factionCost])
   @@map("players")
 }

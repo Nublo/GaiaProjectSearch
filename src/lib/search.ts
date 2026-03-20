@@ -281,6 +281,7 @@ export async function searchGames(req: SearchRequest): Promise<SearchGamesResult
         qicPoints: true,
         techPoints: true,
         totalScoredPoints: true,
+        factionCost: true,
       },
     },
   } as const;
