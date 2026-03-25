@@ -17,6 +17,7 @@ model Game {
   winnerName   String   @map("winner_name")
   minPlayerElo  Int?     @map("min_player_elo")
   finalScorings Int[]    @map("final_scorings")
+  isComplete    Boolean  @default(false) @map("is_complete")
   rawGameLog    Json     @map("raw_game_log")
   players       Player[]
 
@@ -24,6 +25,7 @@ model Game {
   @@index([playerCount])
   @@index([minPlayerElo])
   @@index([finalScorings], map: "games_final_scorings_gin_idx", type: Gin)
+  @@index([isComplete])
   @@map("games")
 }
 

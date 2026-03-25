@@ -40,6 +40,7 @@ export interface ParsedGameData {
   winnerName: string; // Name of the winning player
   minPlayerElo: number | null; // Minimum ELO among all players (normalized)
   finalScorings: number[]; // IDs of the 2 active final scoring missions (1–6)
+  isComplete: boolean; // True if all 6 rounds were played (notifyRoundEnd roundNum===6 found)
   players: PlayerRaceMapping[];
 
   // Raw data for future parsing
@@ -348,6 +349,15 @@ export class GameLogParser {
       .filter((id): id is number => id !== undefined)
       .sort((a, b) => a - b);
 
+    // Determine if the game completed normally (all 6 rounds played)
+    const isComplete = logs.some((packet) =>
+      packet.data.some(
+        (event: any) =>
+          event.type === EventType.NOTIFY_ROUND_END &&
+          event.args?.roundNum === 6
+      )
+    );
+
     // Build the parsed data object
     const parsedData: ParsedGameData = {
       tableId: gameTable.table_id,
@@ -358,6 +368,7 @@ export class GameLogParser {
       winnerName,
       minPlayerElo,
       finalScorings,
+      isComplete,
       rawLog: logResponse,
     };
 

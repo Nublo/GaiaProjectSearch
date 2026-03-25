@@ -22,6 +22,7 @@ export async function storeGame(parsedGame: ParsedGameData) {
         winnerName: parsedGame.winnerName,
         minPlayerElo: parsedGame.minPlayerElo,
         finalScorings: parsedGame.finalScorings,
+        isComplete: parsedGame.isComplete,
         rawGameLog: parsedGame as any,
       }
     });

@@ -7,6 +7,7 @@ export interface GameResult {
   winnerName: string;
   minPlayerElo?: number | null;
   finalScorings: number[];
+  isComplete: boolean;
   players: PlayerResult[];
 }
 
