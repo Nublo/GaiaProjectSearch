@@ -368,6 +368,7 @@ export async function searchGames(req: SearchRequest): Promise<SearchGamesResult
 
 export interface FactionStat {
   raceName: string;
+  avgPts: number;
   score: number;
   gamesCount: number;
   places: [number, number, number, number]; // counts for 1st, 2nd, 3rd, 4th place
@@ -639,7 +640,7 @@ export async function getPlayerAnalytics(playerName: string | undefined, req: Se
   });
 
   const totalGames = games.length;
-  const factionAccum = new Map<string, { scoreSum: number; count: number; places: [number, number, number, number] }>();
+  const factionAccum = new Map<string, { scoreSum: number; ptsSum: number; count: number; places: [number, number, number, number] }>();
 
   for (const game of games) {
     const { playerCount, players } = game;
@@ -666,16 +667,17 @@ export async function getPlayerAnalytics(playerName: string | undefined, req: Se
       const f = playerCount - place;
       const raceName = targetPlayer.raceName;
 
-      const existing = factionAccum.get(raceName) ?? { scoreSum: 0, count: 0, places: [0, 0, 0, 0] as [number, number, number, number] };
+      const existing = factionAccum.get(raceName) ?? { scoreSum: 0, ptsSum: 0, count: 0, places: [0, 0, 0, 0] as [number, number, number, number] };
       const newPlaces: [number, number, number, number] = [...existing.places] as [number, number, number, number];
       if (place >= 1 && place <= 4) newPlaces[place - 1]++;
-      factionAccum.set(raceName, { scoreSum: existing.scoreSum + f, count: existing.count + 1, places: newPlaces });
+      factionAccum.set(raceName, { scoreSum: existing.scoreSum + f, ptsSum: existing.ptsSum + targetPlayer.finalScore, count: existing.count + 1, places: newPlaces });
     }
   }
 
   const factionStats: FactionStat[] = Array.from(factionAccum.entries())
-    .map(([raceName, { scoreSum, count, places }]) => ({
+    .map(([raceName, { scoreSum, ptsSum, count, places }]) => ({
       raceName,
+      avgPts: ptsSum / count,
       score: scoreSum / count,
       gamesCount: count,
       places,

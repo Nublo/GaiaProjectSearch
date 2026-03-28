@@ -44,6 +44,9 @@ next-env.d.ts
 scripts/*-output.json
 scripts/push-to-remote.ts
 passwords.txt
+players_to_collect.txt
+scripts/collect-daily.sh
+logs/
 
 # Claude Code local settings
 .claude/settings.local.json

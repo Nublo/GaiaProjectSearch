@@ -149,6 +149,23 @@ npx tsx scripts/push-to-remote.ts
 
 **BGA Rate Limit**: ~100 game log views per day per account. The collector detects this immediately and stops cleanly. Re-run next day or use multiple accounts.
 
+## Automated Daily Collection
+
+`scripts/collect-daily.sh` runs automatically via launchd (macOS). It picks a random player from `players_to_collect.txt`, runs `collect-player.ts`, then `push-to-remote.ts`. Each run shifts the next scheduled time +10 min to avoid BGA rate limit collisions.
+
+- **State file**: `~/.config/bgagaia/state.json` — contains `nextRunAt` and `lastRunDate`; edit `nextRunAt` to reset the schedule
+- **Logs**: `logs/collect-YYYY-MM-DD.log`
+- **Check interval**: every 15 min (catches up within 15 min after machine wake)
+- **launchd plist**: `~/Library/LaunchAgents/com.bgagaiaparser.collect.plist`
+
+```bash
+# Enable
+launchctl load ~/Library/LaunchAgents/com.bgagaiaparser.collect.plist
+
+# Disable
+launchctl unload ~/Library/LaunchAgents/com.bgagaiaparser.collect.plist
+```
+
 ## Deployment
 
 - **Local**: Docker PostgreSQL + `npm run dev`

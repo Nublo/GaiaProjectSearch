@@ -33,6 +33,11 @@ export default async function AnalyticsPage({
   const { totalGames, factionStats, queryMs } = await getPlayerAnalytics(player, searchRequest);
   const renderMs = Math.round(performance.now() - pageStart);
 
+  const placeWidths = [0, 1, 2, 3].map((i) =>
+    Math.max(...factionStats.map((s) => String(s.places[i]).length), 1)
+  );
+  const totalWidth = Math.max(...factionStats.map((s) => String(s.gamesCount).length), 1);
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 py-8">
       <div className="container mx-auto px-4">
@@ -61,13 +66,10 @@ export default async function AnalyticsPage({
             <table className="w-full text-sm">
               <thead>
                 <tr className="bg-gray-50 border-b border-gray-200">
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide">Faction</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide w-full">Faction</th>
                   <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wide">Score</th>
-                  <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wide">Games</th>
-                  <th className="px-4 py-3 text-right text-xs font-semibold text-yellow-600 uppercase tracking-wide">1st</th>
-                  <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wide">2nd</th>
-                  <th className="px-4 py-3 text-right text-xs font-semibold text-amber-700 uppercase tracking-wide">3rd</th>
-                  <th className="px-4 py-3 text-right text-xs font-semibold text-gray-400 uppercase tracking-wide">4th</th>
+                  <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wide">AVG pts</th>
+                  <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wide whitespace-nowrap">1st | 2nd | 3rd | 4th (total)</th>
                 </tr>
               </thead>
               <tbody>
@@ -109,24 +111,24 @@ export default async function AnalyticsPage({
                         {stat.score.toFixed(2)}
                       </a>
                     </td>
-                    <td className="px-4 py-3 text-right text-gray-600">
+                    <td className="px-4 py-3 text-right font-mono text-gray-700">
                       <a href={rowHref} target="_blank" rel="noreferrer" className="block">
-                        {stat.gamesCount}
+                        {stat.avgPts.toFixed(1)}
                       </a>
                     </td>
-                    {stat.places.map((count, i) => (
-                      <td key={i} className="px-4 py-3 text-right text-gray-600">
-                        <a href={rowHref} target="_blank" rel="noreferrer" className="block">
-                          {count}
-                        </a>
-                      </td>
-                    ))}
+                    <td className="px-4 py-3 text-right font-mono text-gray-600 whitespace-nowrap">
+                      <a href={rowHref} target="_blank" rel="noreferrer" className="block">
+                        {stat.places.map((count, i) => (
+                          <span key={i}><span className="inline-block text-right" style={{minWidth: `${placeWidths[i]}ch`}}>{count}</span>{i < 3 ? ' | ' : ''}</span>
+                        ))} (<span className="inline-block text-right" style={{minWidth: `${totalWidth}ch`}}>{stat.gamesCount}</span>)
+                      </a>
+                    </td>
                   </tr>
                   );
                 })}
                 {factionStats.length === 0 && (
                   <tr>
-                    <td colSpan={7} className="px-4 py-8 text-center text-gray-500">
+                    <td colSpan={4} className="px-4 py-8 text-center text-gray-500">
                       No games found with these filters
                     </td>
                   </tr>
