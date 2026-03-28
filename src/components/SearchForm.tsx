@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import type { SearchRequest, StructureCondition, ResearchCondition, AdvancedTechCondition, StandardTechCondition } from '@/types/game';
 import { FINAL_SCORING_NAMES, getFinalScoringName, RESEARCH_TRACK_SHORT_NAMES, ADVANCED_TECH_LABELS, ADVANCED_TECH_IMAGES, STANDARD_TECH_LABELS, STANDARD_TECH_IMAGES } from '@/lib/gaia-constants';
@@ -55,6 +56,7 @@ function getRaceFile(name: string): string {
 }
 
 export default function SearchForm({ onSearch, isLoading = false }: SearchFormProps) {
+  const router = useRouter();
   const [criteria, setCriteria] = useState<FormState>({});
   const [selectedLevel, setSelectedLevel] = useState<string>('');
   const [sortBy, setSortBy] = useState<string>('');
@@ -70,6 +72,10 @@ export default function SearchForm({ onSearch, isLoading = false }: SearchFormPr
   const [allPlayerNames, setAllPlayerNames] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [showWinnerSuggestions, setShowWinnerSuggestions] = useState(false);
+
+  // Analytics player name
+  const [analyticsPlayerName, setAnalyticsPlayerName] = useState('');
+  const [showAnalyticsSuggestions, setShowAnalyticsSuggestions] = useState(false);
 
   useEffect(() => {
     fetch('/api/players')
@@ -92,8 +98,16 @@ export default function SearchForm({ onSearch, isLoading = false }: SearchFormPr
           .slice(0, 5)
       : [];
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const analyticsSuggestions =
+    analyticsPlayerName.length >= 2
+      ? allPlayerNames
+          .filter((n) => n.toLowerCase().includes(analyticsPlayerName.toLowerCase()))
+          .slice(0, 5)
+      : [];
+
+  const isAnalyticsPlayerValid = allPlayerNames.includes(analyticsPlayerName);
+
+  const buildSearchRequest = (): SearchRequest => {
     const structureConditions: StructureCondition[] = fractionConfigs.flatMap((fc) =>
       fc.conditions.length === 0 && fc.researchConditions.length === 0 && fc.advancedTechs.length === 0
         ? [{ race: fc.race }]
@@ -108,7 +122,7 @@ export default function SearchForm({ onSearch, isLoading = false }: SearchFormPr
     const standardTechConditions: StandardTechCondition[] = fractionConfigs.flatMap((fc) =>
       fc.standardTechs.map((techId) => ({ race: fc.race, techId }))
     );
-    onSearch({
+    return {
       winnerRace: criteria.winnerRace,
       winnerPlayerName: criteria.winnerPlayerName,
       minPlayerElo: criteria.minPlayerElo,
@@ -120,7 +134,12 @@ export default function SearchForm({ onSearch, isLoading = false }: SearchFormPr
       advancedTechConditions,
       standardTechConditions,
       sortBy: (sortBy as SearchRequest['sortBy']) || undefined,
-    });
+    };
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSearch(buildSearchRequest());
   };
 
   const handleReset = () => {
@@ -133,6 +152,7 @@ export default function SearchForm({ onSearch, isLoading = false }: SearchFormPr
     setPlayerNameConditions([]);
     setPlayerCountConditions([]);
     setFinalScoringConditions([]);
+    setAnalyticsPlayerName('');
   };
 
   function toggleFraction(name: string) {
@@ -882,6 +902,48 @@ export default function SearchForm({ onSearch, isLoading = false }: SearchFormPr
         >
           Reset
         </button>
+      </div>
+
+      {/* Analytics */}
+      <div className="mt-4 border-t border-gray-200 pt-4">
+        <div className="flex gap-3 items-start">
+          <div className="relative flex-1">
+            <input
+              type="text"
+              value={analyticsPlayerName}
+              onChange={(e) => { setAnalyticsPlayerName(e.target.value); setShowAnalyticsSuggestions(true); }}
+              onFocus={() => setShowAnalyticsSuggestions(true)}
+              onBlur={() => setTimeout(() => setShowAnalyticsSuggestions(false), 150)}
+              placeholder="Player name"
+              autoComplete="off"
+              className={inputClassName}
+            />
+            {showAnalyticsSuggestions && analyticsSuggestions.length > 0 && (
+              <ul className="absolute z-10 w-full bg-white border border-gray-200 rounded-md shadow-lg mt-1 overflow-hidden">
+                {analyticsSuggestions.map((name) => (
+                  <li
+                    key={name}
+                    onMouseDown={() => { setAnalyticsPlayerName(name); setShowAnalyticsSuggestions(false); }}
+                    className="px-3 py-2 text-sm text-gray-800 hover:bg-blue-50 cursor-pointer"
+                  >
+                    {name}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+          <button
+            type="button"
+            disabled={!isAnalyticsPlayerValid}
+            onClick={() => {
+              const req = buildSearchRequest();
+              window.open(`/analytics?player=${encodeURIComponent(analyticsPlayerName)}&q=${encodeURIComponent(JSON.stringify(req))}`, '_blank');
+            }}
+            className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors whitespace-nowrap"
+          >
+            Analytics
+          </button>
+        </div>
       </div>
     </form>
   );
