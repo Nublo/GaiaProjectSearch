@@ -143,13 +143,20 @@ export class GameLogParser {
         if (eventType === EventType.GAME_STATE_CHANGE) {
           const args = event.args;
           // Check for game end with results
-          if (args.args?.result && Array.isArray(args.args.result)) {
-            for (const playerScore of args.args.result) {
+          if (args.args?.result) {
+            // result can be an array (newer logs) or an object keyed by player ID (older logs)
+            const resultEntries: any[] = Array.isArray(args.args.result)
+              ? args.args.result
+              : Object.values(args.args.result);
+
+            for (const playerScore of resultEntries) {
               const playerId = parseInt(playerScore.id);
               const score = parseInt(playerScore.score);
 
-              // Update finalScore directly on the player object
-              const player = players.find((p) => p.playerId === playerId);
+              // Match by id if available, fall back to name
+              const player = isNaN(playerId)
+                ? players.find((p) => p.playerName === playerScore.name)
+                : players.find((p) => p.playerId === playerId);
               if (player) {
                 player.finalScore = score;
               }
@@ -350,13 +357,21 @@ export class GameLogParser {
       .sort((a, b) => a - b);
 
     // Determine if the game completed normally (all 6 rounds played)
-    const isComplete = logs.some((packet) =>
+    // A game is also considered incomplete if some players scored 0 and the rest scored 1 —
+    // this pattern indicates a player left and BGA assigned placeholder scores.
+    const hadRound6 = logs.some((packet) =>
       packet.data.some(
         (event: any) =>
           event.type === EventType.NOTIFY_ROUND_END &&
           event.args?.roundNum === 6
       )
     );
+    const scores = players.map((p) => p.finalScore);
+    const hasPlaceholderScores =
+      scores.length > 0 &&
+      scores.some((s) => s === 0) &&
+      scores.every((s) => s === 0 || s === 1);
+    const isComplete = hadRound6 && !hasPlaceholderScores;
 
     // Build the parsed data object
     const parsedData: ParsedGameData = {
