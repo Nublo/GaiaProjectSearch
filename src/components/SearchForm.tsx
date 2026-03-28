@@ -25,6 +25,8 @@ interface FractionConfig {
   tempResearchMaxRound?: number;
   advancedTechs: number[];
   standardTechs: number[];
+  playedBy?: string;
+  tempPlayedBy: string;
 }
 
 interface SearchFormProps {
@@ -77,6 +79,9 @@ export default function SearchForm({ onSearch, isLoading = false }: SearchFormPr
   const [analyticsPlayerName, setAnalyticsPlayerName] = useState('');
   const [showAnalyticsSuggestions, setShowAnalyticsSuggestions] = useState(false);
 
+  // Played by dropdowns (keyed by race name)
+  const [showPlayedBySuggestions, setShowPlayedBySuggestions] = useState<Record<string, boolean>>({});
+
   useEffect(() => {
     fetch('/api/players')
       .then((r) => r.json())
@@ -122,6 +127,9 @@ export default function SearchForm({ onSearch, isLoading = false }: SearchFormPr
     const standardTechConditions: StandardTechCondition[] = fractionConfigs.flatMap((fc) =>
       fc.standardTechs.map((techId) => ({ race: fc.race, techId }))
     );
+    const playerRaceConditions = fractionConfigs
+      .filter((fc) => fc.playedBy)
+      .map((fc) => ({ playerName: fc.playedBy!, race: fc.race }));
     return {
       winnerRace: criteria.winnerRace,
       winnerPlayerName: criteria.winnerPlayerName,
@@ -133,6 +141,7 @@ export default function SearchForm({ onSearch, isLoading = false }: SearchFormPr
       finalScorings: finalScoringConditions,
       advancedTechConditions,
       standardTechConditions,
+      playerRaceConditions,
       sortBy: (sortBy as SearchRequest['sortBy']) || undefined,
     };
   };
@@ -159,12 +168,24 @@ export default function SearchForm({ onSearch, isLoading = false }: SearchFormPr
     if (fractionConfigs.some((fc) => fc.race === name)) {
       setFractionConfigs(fractionConfigs.filter((fc) => fc.race !== name));
     } else {
-      setFractionConfigs([...fractionConfigs, { race: name, conditions: [], researchConditions: [], advancedTechs: [], standardTechs: [], tempStructure: 'knowledge-academy', tempResearchTrack: 1, tempResearchMinLevel: 4, tempResearchMaxRound: 6 }]);
+      setFractionConfigs([...fractionConfigs, { race: name, conditions: [], researchConditions: [], advancedTechs: [], standardTechs: [], tempStructure: 'knowledge-academy', tempResearchTrack: 1, tempResearchMinLevel: 4, tempResearchMaxRound: 6, tempPlayedBy: '' }]);
     }
   }
 
   function updateFractionTemp(race: string, patch: Partial<Pick<FractionConfig, 'tempStructure' | 'tempMaxRound'>>) {
     setFractionConfigs(fractionConfigs.map((fc) => fc.race !== race ? fc : { ...fc, ...patch }));
+  }
+
+  function updateFractionPlayedByTemp(race: string, value: string) {
+    setFractionConfigs(fractionConfigs.map((fc) => fc.race !== race ? fc : { ...fc, tempPlayedBy: value }));
+  }
+
+  function setFractionPlayedBy(race: string, playerName: string) {
+    setFractionConfigs(fractionConfigs.map((fc) => fc.race !== race ? fc : { ...fc, playedBy: playerName, tempPlayedBy: '' }));
+  }
+
+  function clearFractionPlayedBy(race: string) {
+    setFractionConfigs(fractionConfigs.map((fc) => fc.race !== race ? fc : { ...fc, playedBy: undefined, tempPlayedBy: '' }));
   }
 
   function addConditionToFraction(race: string) {
@@ -645,6 +666,47 @@ export default function SearchForm({ onSearch, isLoading = false }: SearchFormPr
                   ))}
                 </div>
               )}
+
+              {/* Played by */}
+              <div className="mt-2 flex items-center gap-2 flex-wrap">
+                {fc.playedBy ? (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-indigo-50 border border-indigo-200 rounded-full text-sm text-indigo-800">
+                    Played by: <strong>{fc.playedBy}</strong>
+                    <button type="button" onClick={() => clearFractionPlayedBy(fc.race)} className="ml-1 text-indigo-400 hover:text-indigo-600">×</button>
+                  </span>
+                ) : (
+                  <div className="relative">
+                    <div className="flex gap-2 items-center">
+                      <input
+                        type="text"
+                        value={fc.tempPlayedBy}
+                        onChange={(e) => { updateFractionPlayedByTemp(fc.race, e.target.value); setShowPlayedBySuggestions((s) => ({ ...s, [fc.race]: true })); }}
+                        onFocus={() => setShowPlayedBySuggestions((s) => ({ ...s, [fc.race]: true }))}
+                        onBlur={() => setTimeout(() => setShowPlayedBySuggestions((s) => ({ ...s, [fc.race]: false })), 150)}
+                        placeholder="Played by..."
+                        autoComplete="off"
+                        className="flex-1 min-w-0 h-9 px-2 border border-gray-300 rounded-md text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-gray-500"
+                      />
+                    </div>
+                    {showPlayedBySuggestions[fc.race] && fc.tempPlayedBy.length >= 2 && (
+                      <ul className="absolute z-10 w-40 bg-white border border-gray-200 rounded-md shadow-lg mt-1 overflow-hidden">
+                        {allPlayerNames
+                          .filter((n) => n.toLowerCase().includes(fc.tempPlayedBy.toLowerCase()))
+                          .slice(0, 5)
+                          .map((name) => (
+                            <li
+                              key={name}
+                              onMouseDown={() => { setFractionPlayedBy(fc.race, name); setShowPlayedBySuggestions((s) => ({ ...s, [fc.race]: false })); }}
+                              className="px-3 py-2 text-sm text-gray-800 hover:bg-blue-50 cursor-pointer"
+                            >
+                              {name}
+                            </li>
+                          ))}
+                      </ul>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
           ))}
         </div>
