@@ -934,12 +934,12 @@ export default function SearchForm({ onSearch, isLoading = false }: SearchFormPr
           </div>
           <button
             type="button"
-            disabled={!isAnalyticsPlayerValid}
             onClick={() => {
               const req = buildSearchRequest();
-              window.open(`/analytics?player=${encodeURIComponent(analyticsPlayerName)}&q=${encodeURIComponent(JSON.stringify(req))}`, '_blank');
+              const playerParam = isAnalyticsPlayerValid ? `player=${encodeURIComponent(analyticsPlayerName)}&` : '';
+              window.open(`/analytics?${playerParam}q=${encodeURIComponent(JSON.stringify(req))}`, '_blank');
             }}
-            className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors whitespace-nowrap"
+            className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors whitespace-nowrap"
           >
             Analytics
           </button>

@@ -22,18 +22,6 @@ export default async function AnalyticsPage({
 }) {
   const { player, q } = await searchParams;
 
-  if (!player) {
-    return (
-      <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 py-8">
-        <div className="container mx-auto px-4">
-          <div className="w-full max-w-4xl mx-auto px-6 pt-2 pb-4">
-            <p className="text-gray-600">No player specified.</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   let searchRequest: SearchRequest = EMPTY_REQUEST;
   try {
     if (q) searchRequest = JSON.parse(decodeURIComponent(q)) as SearchRequest;
@@ -50,7 +38,7 @@ export default async function AnalyticsPage({
       <div className="container mx-auto px-4">
         <div className="w-full max-w-4xl mx-auto px-6 pt-2 pb-4">
           <h1 className="text-3xl font-bold text-gray-900">Analytics</h1>
-          <p className="text-lg text-gray-600 mt-1">Player: <strong>{player}</strong></p>
+          {player && <p className="text-lg text-gray-600 mt-1">Player: <strong>{player}</strong></p>}
         </div>
 
         <div className="w-full max-w-4xl mx-auto px-6 pb-4">
@@ -84,13 +72,21 @@ export default async function AnalyticsPage({
               </thead>
               <tbody>
                 {factionStats.map((stat) => {
-                  const rowRequest = {
-                    ...searchRequest,
-                    playerRaceConditions: [
-                      ...(searchRequest.playerRaceConditions ?? []),
-                      { playerName: player, race: stat.raceName },
-                    ],
-                  };
+                  const rowRequest = player
+                    ? {
+                        ...searchRequest,
+                        playerRaceConditions: [
+                          ...(searchRequest.playerRaceConditions ?? []),
+                          { playerName: player, race: stat.raceName },
+                        ],
+                      }
+                    : {
+                        ...searchRequest,
+                        structureConditions: [
+                          ...(searchRequest.structureConditions ?? []),
+                          { race: stat.raceName },
+                        ],
+                      };
                   const rowHref = `/results?q=${encodeURIComponent(JSON.stringify(rowRequest))}`;
                   return (
                   <tr key={stat.raceName} className="border-b border-gray-100 hover:bg-gray-50 cursor-pointer">

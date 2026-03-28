@@ -379,7 +379,7 @@ export interface PlayerAnalyticsResult {
   queryMs: number;
 }
 
-export async function getPlayerAnalytics(playerName: string, req: SearchRequest): Promise<PlayerAnalyticsResult> {
+export async function getPlayerAnalytics(playerName: string | undefined, req: SearchRequest): Promise<PlayerAnalyticsResult> {
   const {
     winnerRace,
     winnerPlayerName,
@@ -396,10 +396,12 @@ export async function getPlayerAnalytics(playerName: string, req: SearchRequest)
 
   const andConditions: Prisma.GameWhereInput[] = [];
 
-  // Always enforce completed multi-player games with target player
+  // Always enforce completed multi-player games
   andConditions.push({ isComplete: true });
   andConditions.push({ playerCount: { gt: 1 } });
-  andConditions.push({ players: { some: { playerName: { contains: playerName, mode: 'insensitive' } } } });
+  if (playerName) {
+    andConditions.push({ players: { some: { playerName: { contains: playerName, mode: 'insensitive' } } } });
+  }
 
   if (minPlayerElo) {
     andConditions.push({ minPlayerElo: { gte: minPlayerElo } });
@@ -655,19 +657,20 @@ export async function getPlayerAnalytics(playerName: string, req: SearchRequest)
       rankMap.set(sorted[i].playerName, rank);
     }
 
-    const targetPlayer = players.find(
-      (p) => p.playerName.toLowerCase() === playerName.toLowerCase()
-    );
-    if (!targetPlayer) continue;
+    const scoringPlayers = playerName
+      ? players.filter((p) => p.playerName.toLowerCase() === playerName.toLowerCase())
+      : players;
 
-    const place = rankMap.get(targetPlayer.playerName) ?? 1;
-    const f = playerCount - place;
-    const raceName = targetPlayer.raceName;
+    for (const targetPlayer of scoringPlayers) {
+      const place = rankMap.get(targetPlayer.playerName) ?? 1;
+      const f = playerCount - place;
+      const raceName = targetPlayer.raceName;
 
-    const existing = factionAccum.get(raceName) ?? { scoreSum: 0, count: 0, places: [0, 0, 0, 0] as [number, number, number, number] };
-    const newPlaces: [number, number, number, number] = [...existing.places] as [number, number, number, number];
-    if (place >= 1 && place <= 4) newPlaces[place - 1]++;
-    factionAccum.set(raceName, { scoreSum: existing.scoreSum + f, count: existing.count + 1, places: newPlaces });
+      const existing = factionAccum.get(raceName) ?? { scoreSum: 0, count: 0, places: [0, 0, 0, 0] as [number, number, number, number] };
+      const newPlaces: [number, number, number, number] = [...existing.places] as [number, number, number, number];
+      if (place >= 1 && place <= 4) newPlaces[place - 1]++;
+      factionAccum.set(raceName, { scoreSum: existing.scoreSum + f, count: existing.count + 1, places: newPlaces });
+    }
   }
 
   const factionStats: FactionStat[] = Array.from(factionAccum.entries())
