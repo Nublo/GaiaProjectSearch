@@ -40,6 +40,11 @@ export interface StandardTechCondition {
   techId: number;
 }
 
+export interface PlayerRaceCondition {
+  playerName: string;
+  race: string;
+}
+
 export interface SearchRequest {
   winnerRace?: string;
   winnerPlayerName?: string;
@@ -51,6 +56,7 @@ export interface SearchRequest {
   finalScorings?: number[];
   advancedTechConditions?: AdvancedTechCondition[];
   standardTechConditions?: StandardTechCondition[];
+  playerRaceConditions?: PlayerRaceCondition[];
   sortBy?: 'qicPoints' | 'techPoints' | 'totalScoredPoints' | 'finalScore';
 }
 
