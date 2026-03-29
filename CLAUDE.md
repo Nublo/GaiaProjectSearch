@@ -120,6 +120,15 @@ npm run db:migrate
 # Start dev server
 npm run dev
 
+# Run tests
+npm test
+
+# Run tests in watch mode
+npm run test:watch
+
+# Run tests with coverage
+npm run test:coverage
+
 # Type check
 npm run type-check
 
