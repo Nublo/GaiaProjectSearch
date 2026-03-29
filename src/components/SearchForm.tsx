@@ -76,6 +76,7 @@ export default function SearchForm({ onSearch, isLoading = false }: SearchFormPr
   const [showWinnerSuggestions, setShowWinnerSuggestions] = useState(false);
 
   // Analytics player name
+  const [analyticsPlayer, setAnalyticsPlayer] = useState('');
   const [analyticsPlayerName, setAnalyticsPlayerName] = useState('');
   const [showAnalyticsSuggestions, setShowAnalyticsSuggestions] = useState(false);
 
@@ -109,8 +110,6 @@ export default function SearchForm({ onSearch, isLoading = false }: SearchFormPr
           .filter((n) => n.toLowerCase().includes(analyticsPlayerName.toLowerCase()))
           .slice(0, 5)
       : [];
-
-  const isAnalyticsPlayerValid = allPlayerNames.includes(analyticsPlayerName);
 
   const buildSearchRequest = (): SearchRequest => {
     const structureConditions: StructureCondition[] = fractionConfigs.flatMap((fc) =>
@@ -161,6 +160,7 @@ export default function SearchForm({ onSearch, isLoading = false }: SearchFormPr
     setPlayerNameConditions([]);
     setPlayerCountConditions([]);
     setFinalScoringConditions([]);
+    setAnalyticsPlayer('');
     setAnalyticsPlayerName('');
   };
 
@@ -968,43 +968,50 @@ export default function SearchForm({ onSearch, isLoading = false }: SearchFormPr
 
       {/* Analytics */}
       <div className="mt-4 border-t border-gray-200 pt-4">
-        <div className="flex gap-3 items-start">
-          <div className="relative flex-1">
-            <input
-              type="text"
-              value={analyticsPlayerName}
-              onChange={(e) => { setAnalyticsPlayerName(e.target.value); setShowAnalyticsSuggestions(true); }}
-              onFocus={() => setShowAnalyticsSuggestions(true)}
-              onBlur={() => setTimeout(() => setShowAnalyticsSuggestions(false), 150)}
-              placeholder="Player name"
-              autoComplete="off"
-              className={inputClassName}
-            />
-            {showAnalyticsSuggestions && analyticsSuggestions.length > 0 && (
-              <ul className="absolute z-10 w-full bg-white border border-gray-200 rounded-md shadow-lg mt-1 overflow-hidden">
-                {analyticsSuggestions.map((name) => (
-                  <li
-                    key={name}
-                    onMouseDown={() => { setAnalyticsPlayerName(name); setShowAnalyticsSuggestions(false); }}
-                    className="px-3 py-2 text-sm text-gray-800 hover:bg-blue-50 cursor-pointer"
-                  >
-                    {name}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
+        <div className="flex gap-3 items-center">
           <button
             type="button"
             onClick={() => {
               const req = buildSearchRequest();
-              const playerParam = isAnalyticsPlayerValid ? `player=${encodeURIComponent(analyticsPlayerName)}&` : '';
+              const playerParam = analyticsPlayer ? `player=${encodeURIComponent(analyticsPlayer)}&` : '';
               window.open(`/analytics?${playerParam}q=${encodeURIComponent(JSON.stringify(req))}`, '_blank');
             }}
             className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors whitespace-nowrap"
           >
             Analytics
           </button>
+          {analyticsPlayer ? (
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-indigo-50 border border-indigo-200 rounded-full text-sm text-indigo-800">
+              Player: <strong>{analyticsPlayer}</strong>
+              <button type="button" onClick={() => setAnalyticsPlayer('')} className="ml-1 text-indigo-400 hover:text-indigo-600">×</button>
+            </span>
+          ) : (
+            <div className="relative flex-1">
+              <input
+                type="text"
+                value={analyticsPlayerName}
+                onChange={(e) => { setAnalyticsPlayerName(e.target.value); setShowAnalyticsSuggestions(true); }}
+                onFocus={() => setShowAnalyticsSuggestions(true)}
+                onBlur={() => setTimeout(() => setShowAnalyticsSuggestions(false), 150)}
+                placeholder="For player"
+                autoComplete="off"
+                className={inputClassName}
+              />
+              {showAnalyticsSuggestions && analyticsSuggestions.length > 0 && (
+                <ul className="absolute z-10 w-full bg-white border border-gray-200 rounded-md shadow-lg mt-1 overflow-hidden">
+                  {analyticsSuggestions.map((name) => (
+                    <li
+                      key={name}
+                      onMouseDown={() => { setAnalyticsPlayer(name); setAnalyticsPlayerName(''); setShowAnalyticsSuggestions(false); }}
+                      className="px-3 py-2 text-sm text-gray-800 hover:bg-blue-50 cursor-pointer"
+                    >
+                      {name}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </form>
