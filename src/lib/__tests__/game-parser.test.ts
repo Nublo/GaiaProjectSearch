@@ -8,16 +8,14 @@ import type { GameTableInfo, GetGameLogResponse, GetTableInfoResponse } from '..
 // HELPERS & FIXTURES
 // ============================================================================
 
-const REPO_ROOT = resolve(__dirname, '../../..')
+const FIXTURES_DIR = resolve(__dirname, 'fixtures')
 
-/** Load the real logs.json fixture from the repo root */
 function loadLogsFixture(): GetGameLogResponse {
-  return JSON.parse(readFileSync(resolve(REPO_ROOT, 'logs.json'), 'utf8'))
+  return JSON.parse(readFileSync(resolve(FIXTURES_DIR, 'test_game.json'), 'utf8'))
 }
 
-/** Load the real logs_bescods.json fixture from the repo root */
 function loadBescodsFixture(): GetGameLogResponse {
-  return JSON.parse(readFileSync(resolve(REPO_ROOT, 'logs_bescods.json'), 'utf8'))
+  return JSON.parse(readFileSync(resolve(FIXTURES_DIR, 'game_bescods.json'), 'utf8'))
 }
 
 /**
