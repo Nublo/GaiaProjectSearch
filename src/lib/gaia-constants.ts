@@ -203,6 +203,7 @@ export interface PlayerRaceMapping {
   techPoints: number;      // VP from technology tile gains and round-end tech scoring
   totalScoredPoints: number; // finalScore - startingScore
   factionCost: number;     // VP bid cost in auction/draft mode (0 if no auction)
+  isWinner: boolean;       // True if this player shared first place (gamerank === "1")
 }
 
 // Short display names for research tracks (for UI chips and labels)

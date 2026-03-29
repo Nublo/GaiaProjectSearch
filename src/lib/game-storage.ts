@@ -39,7 +39,7 @@ export async function storeGame(parsedGame: ParsedGameData) {
             raceName: player.raceName,
             finalScore: player.finalScore,
             playerElo: player.playerElo,
-            isWinner: player.playerName === parsedGame.winnerName,
+            isWinner: player.isWinner,
             buildingsData: {
               buildings: player.buildings
             },

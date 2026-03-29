@@ -132,6 +132,7 @@ export class GameLogParser {
             techPoints: 0,
             totalScoredPoints: 0,
             factionCost: 0,
+            isWinner: false, // Will be set after all scores are known
           });
 
           console.log(
@@ -335,14 +336,27 @@ export class GameLogParser {
       player.totalScoredPoints = player.finalScore - player.startingScore;
     }
 
-    // Determine winner (player with highest score)
-    let winnerName = '';
-    if (players.length > 0) {
-      const winner = players.reduce((max, player) =>
-        player.finalScore > max.finalScore ? player : max
-      );
-      winnerName = winner.playerName;
+    // Determine winners using gamerank from tableInfo (handles ties — multiple players can share rank 1)
+    const winnerPlayerIds = new Set(
+      tableInfo.data.result.player
+        .filter((p) => p.gamerank === '1')
+        .map((p) => parseInt(p.player_id))
+    );
+
+    // Fall back to highest score if tableInfo has no rank-1 players
+    if (winnerPlayerIds.size === 0 && players.length > 0) {
+      const maxScore = Math.max(...players.map((p) => p.finalScore));
+      players.filter((p) => p.finalScore === maxScore).forEach((p) => winnerPlayerIds.add(p.playerId));
     }
+
+    for (const player of players) {
+      player.isWinner = winnerPlayerIds.has(player.playerId);
+    }
+
+    const winnerName = players
+      .filter((p) => p.isWinner)
+      .map((p) => p.playerName)
+      .join(', ');
 
     // Calculate minimum player ELO
     const playerElos = players
