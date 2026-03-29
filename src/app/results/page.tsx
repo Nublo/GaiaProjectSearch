@@ -3,8 +3,6 @@ import { searchGames } from '@/lib/search';
 import SearchResults from '@/components/SearchResults';
 import type { SearchRequest } from '@/types/game';
 
-export const dynamic = 'force-dynamic';
-
 export const metadata: Metadata = {
   title: 'Search Results',
 };
