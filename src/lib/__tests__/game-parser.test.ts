@@ -326,18 +326,16 @@ describe('GameLogParser.parseGameLog — smoke test (logs_bescods.json)', () => 
     const logResponse = loadBescodsFixture()
     const tableId = logResponse.data.logs[0].table_id
 
-    // Build minimal mocks — we only care that parsing completes
     const gameTable: GameTableInfo = {
       ...makeGameTable(String(tableId)),
       table_id: String(tableId),
     }
     const tableInfo = makeTableInfo({ players: [] })
 
-    expect(() => GameLogParser.parseGameLog(gameTable, logResponse, tableInfo)).not.toThrow()
     const result = GameLogParser.parseGameLog(gameTable, logResponse, tableInfo)
     expect(result.players.length).toBeGreaterThan(0)
-    expect(result.isComplete).toBeDefined()
-    expect(result.finalScorings).toBeDefined()
+    expect(typeof result.isComplete).toBe('boolean')
+    expect(Array.isArray(result.finalScorings)).toBe(true)
   })
 })
 
@@ -479,9 +477,8 @@ describe('GameLogParser — placeholder score detection', () => {
 
 describe('GameLogParser — research level tracking', () => {
   it('stores race starting research levels in round-0 snapshot', () => {
-    // Gleens start with Navigation level 1 (whichResearch index 2 = Navigation in game, trackId=2)
     const logResponse = makeLogResponse([
-      chooseRaceEvent(1, 'Alice', 4, [0, 1, 0, 0, 0, 0]), // Navigation starting at 1
+      chooseRaceEvent(1, 'Alice', 4, [0, 1, 0, 0, 0, 0]), // Navigation=1 starting level
       roundEndEvent(1),
     ])
 
@@ -489,14 +486,13 @@ describe('GameLogParser — research level tracking', () => {
     const result = GameLogParser.parseGameLog(makeGameTable(), logResponse, tableInfo)
     const alice = result.players[0]
 
-    // research[0] = snapshot at end of round 1 — Navigation (index 1) should be 1
     expect(alice.research[0][1]).toBe(1)
   })
 
   it('increments research level on notifyResearch event', () => {
     const logResponse = makeLogResponse([
       chooseRaceEvent(1, 'Alice', 1),
-      researchEvent(1, 2), // advance Navigation (trackId=2)
+      researchEvent(1, 2),
       roundEndEvent(1),
     ])
 
@@ -504,16 +500,15 @@ describe('GameLogParser — research level tracking', () => {
     const result = GameLogParser.parseGameLog(makeGameTable(), logResponse, tableInfo)
     const alice = result.players[0]
 
-    expect(alice.research[0][1]).toBe(1) // Navigation at index 1 = 1 after 1 advance
+    expect(alice.research[0][1]).toBe(1)
   })
 
   it('captures research snapshot before incrementing round counter', () => {
-    // Alice advances Terraforming in round 1, then round 1 ends
     const logResponse = makeLogResponse([
       chooseRaceEvent(1, 'Alice', 1),
-      researchEvent(1, 1), // Terraforming advance
+      researchEvent(1, 1),
       roundEndEvent(1),
-      researchEvent(1, 1), // Another Terraforming advance (round 2)
+      researchEvent(1, 1),
       roundEndEvent(2),
     ])
 
@@ -521,9 +516,7 @@ describe('GameLogParser — research level tracking', () => {
     const result = GameLogParser.parseGameLog(makeGameTable(), logResponse, tableInfo)
     const alice = result.players[0]
 
-    // After round 1 end: Terraforming=1
     expect(alice.research[0][0]).toBe(1)
-    // After round 2 end: Terraforming=2
     expect(alice.research[1][0]).toBe(2)
   })
 })
@@ -536,9 +529,9 @@ describe('GameLogParser — building history', () => {
   it('records mine (buildingId=4) from notifyBuild events', () => {
     const logResponse = makeLogResponse([
       chooseRaceEvent(1, 'Alice', 1),
-      buildEvent(1), // build mine in round 0 (setup)
+      buildEvent(1),
       roundEndEvent(1),
-      buildEvent(1), // build mine in round 1
+      buildEvent(1),
       roundEndEvent(2),
     ])
 
@@ -641,7 +634,6 @@ describe('GameLogParser — field name normalization', () => {
             time: '1700000000',
             data: [
               chooseRaceEvent(42, 'Alice', 1),
-              // Use snake_case player_id (some older events use this)
               {
                 type: 'notifyBuild',
                 args: { player_id: '42', player_name: 'Alice' },
