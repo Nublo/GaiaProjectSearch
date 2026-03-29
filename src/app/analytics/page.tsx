@@ -4,6 +4,8 @@ import { getPlayerAnalytics } from '@/lib/search';
 import { SearchCriteriaSummary, RACE_IMAGE_FILES } from '@/components/SearchCriteriaSummary';
 import type { SearchRequest } from '@/types/game';
 
+export const dynamic = 'force-dynamic';
+
 export const metadata: Metadata = {
   title: 'Player Analytics',
 };
