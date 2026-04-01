@@ -62,8 +62,8 @@ export default async function AnalyticsPage({
         </div>
 
         <div className="w-full max-w-4xl mx-auto px-6 pb-6">
-          <div className="bg-white rounded-lg shadow-md overflow-hidden">
-            <table className="w-full text-sm">
+          <div className="bg-white rounded-lg shadow-md overflow-x-auto">
+            <table className="w-full text-sm min-w-[600px]">
               <thead>
                 <tr className="bg-gray-50 border-b border-gray-200">
                   <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide w-full">Faction</th>
