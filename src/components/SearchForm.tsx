@@ -719,11 +719,10 @@ export default function SearchForm({ onSearch, isLoading = false }: SearchFormPr
           <div className="flex gap-2">
             <select
               id="playerCount"
-              value={criteria.playerCount || ''}
-              onChange={(e) => setCriteria({ ...criteria, playerCount: e.target.value ? parseInt(e.target.value) : undefined })}
+              value={criteria.playerCount ?? 3}
+              onChange={(e) => setCriteria({ ...criteria, playerCount: parseInt(e.target.value) })}
               className={inputClassName}
             >
-              <option value="">Any</option>
               <option value="2">2</option>
               <option value="3">3</option>
               <option value="4">4</option>
@@ -731,8 +730,9 @@ export default function SearchForm({ onSearch, isLoading = false }: SearchFormPr
             <button
               type="button"
               onClick={() => {
-                if (criteria.playerCount && !playerCountConditions.includes(criteria.playerCount)) {
-                  setPlayerCountConditions([...playerCountConditions, criteria.playerCount]);
+                const countToAdd = criteria.playerCount ?? 3;
+                if (!playerCountConditions.includes(countToAdd)) {
+                  setPlayerCountConditions([...playerCountConditions, countToAdd]);
                   setCriteria({ ...criteria, playerCount: undefined });
                 }
               }}
