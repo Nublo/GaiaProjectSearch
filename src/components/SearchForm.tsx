@@ -168,7 +168,7 @@ export default function SearchForm({ onSearch, isLoading = false }: SearchFormPr
     if (fractionConfigs.some((fc) => fc.race === name)) {
       setFractionConfigs(fractionConfigs.filter((fc) => fc.race !== name));
     } else {
-      setFractionConfigs([...fractionConfigs, { race: name, conditions: [], researchConditions: [], advancedTechs: [], standardTechs: [], tempStructure: 'knowledge-academy', tempResearchTrack: 1, tempResearchMinLevel: 4, tempResearchMaxRound: 6, tempPlayedBy: '' }]);
+      setFractionConfigs([...fractionConfigs, { race: name, conditions: [], researchConditions: [], advancedTechs: [], standardTechs: [], tempStructure: 'knowledge-academy', tempMaxRound: 1, tempResearchTrack: 1, tempResearchMinLevel: 4, tempResearchMaxRound: 6, tempPlayedBy: '' }]);
     }
   }
 
@@ -194,8 +194,6 @@ export default function SearchForm({ onSearch, isLoading = false }: SearchFormPr
       return {
         ...fc,
         conditions: [...fc.conditions, { structure: fc.tempStructure, maxRound: fc.tempMaxRound }],
-        tempStructure: 'knowledge-academy',
-        tempMaxRound: undefined,
       };
     }));
   }
@@ -220,9 +218,6 @@ export default function SearchForm({ onSearch, isLoading = false }: SearchFormPr
           minLevel: fc.tempResearchMinLevel,
           maxRound: fc.tempResearchMaxRound,
         }],
-        tempResearchTrack: 1,
-        tempResearchMinLevel: 4,
-        tempResearchMaxRound: 6,
       };
     }));
   }
@@ -511,11 +506,10 @@ export default function SearchForm({ onSearch, isLoading = false }: SearchFormPr
                   <option value="qic-academy">QIC Academy</option>
                 </select>
                 <select
-                  value={fc.tempMaxRound || ''}
-                  onChange={(e) => updateFractionTemp(fc.race, { tempMaxRound: e.target.value ? parseInt(e.target.value) : undefined })}
+                  value={fc.tempMaxRound ?? 1}
+                  onChange={(e) => updateFractionTemp(fc.race, { tempMaxRound: parseInt(e.target.value) })}
                   className="w-28 h-9 px-2 border border-gray-300 rounded-md text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  <option value="">Any Round</option>
                   <option value="1">Round ≤ 1</option>
                   <option value="2">Round ≤ 2</option>
                   <option value="3">Round ≤ 3</option>
@@ -553,11 +547,10 @@ export default function SearchForm({ onSearch, isLoading = false }: SearchFormPr
                   className="w-20 h-9 px-2 border border-gray-300 rounded-md text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-gray-500"
                 />
                 <select
-                  value={fc.tempResearchMaxRound || ''}
-                  onChange={(e) => updateFractionResearchTemp(fc.race, { tempResearchMaxRound: e.target.value ? parseInt(e.target.value) : undefined })}
+                  value={fc.tempResearchMaxRound ?? 6}
+                  onChange={(e) => updateFractionResearchTemp(fc.race, { tempResearchMaxRound: parseInt(e.target.value) })}
                   className="w-28 h-9 px-2 border border-gray-300 rounded-md text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  <option value="">Any Round</option>
                   <option value="1">Round ≤ 1</option>
                   <option value="2">Round ≤ 2</option>
                   <option value="3">Round ≤ 3</option>
