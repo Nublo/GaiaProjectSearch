@@ -36,7 +36,7 @@ export async function searchGames(req: SearchRequest): Promise<SearchGamesResult
     playerRaceConditions = [],
   } = req;
 
-  const andConditions: Prisma.GameWhereInput[] = [];
+  const andConditions: Prisma.GameWhereInput[] = [{ isComplete: true }];
 
   if (minPlayerElo) {
     andConditions.push({ minPlayerElo: { gte: minPlayerElo } });
