@@ -107,8 +107,8 @@ export class GameCollector {
           } catch (error) {
             const errorMsg = error instanceof Error ? error.message : String(error);
 
-            // Detect rate limit and bail out immediately
-            if (errorMsg.includes('You have reached a limit')) {
+            // Detect rate limit and bail out immediately (handles English and localized messages)
+            if (errorMsg.includes('You have reached a limit') || errorMsg.includes('replay')) {
               this.options.onProgress(`   🛑 Rate limit reached! Stopping immediately.`);
               stats.rateLimited = true;
               stats.failedGames++;
