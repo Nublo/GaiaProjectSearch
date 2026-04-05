@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { searchGames } from '@/lib/search';
 import SearchResults from '@/components/SearchResults';
 import type { SearchRequest } from '@/types/game';
+import { deserializeSearchRequest } from '@/lib/search-url';
 
 export const metadata: Metadata = {
   title: 'Search Results',
@@ -17,16 +18,12 @@ const EMPTY_REQUEST: SearchRequest = {
 export default async function ResultsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const { q } = await searchParams;
-
-  let searchRequest: SearchRequest = EMPTY_REQUEST;
-  try {
-    if (q) searchRequest = JSON.parse(decodeURIComponent(q)) as SearchRequest;
-  } catch {
-    // malformed q param — fall back to no filters
-  }
+  const params = await searchParams;
+  const searchRequest: SearchRequest = Object.keys(params).length
+    ? deserializeSearchRequest(params)
+    : EMPTY_REQUEST;
 
   const pageStart = performance.now();
   const { games, queryMs } = await searchGames(searchRequest);

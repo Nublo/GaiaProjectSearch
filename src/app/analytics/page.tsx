@@ -3,6 +3,7 @@ import Image from 'next/image';
 import { getPlayerAnalytics } from '@/lib/search';
 import { SearchCriteriaSummary, RACE_IMAGE_FILES } from '@/components/SearchCriteriaSummary';
 import type { SearchRequest } from '@/types/game';
+import { deserializeSearchRequest, serializeSearchRequest } from '@/lib/search-url';
 
 export const metadata: Metadata = {
   title: 'Player Analytics',
@@ -18,16 +19,13 @@ const EMPTY_REQUEST: SearchRequest = {
 export default async function AnalyticsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ player?: string; q?: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const { player, q } = await searchParams;
-
-  let searchRequest: SearchRequest = EMPTY_REQUEST;
-  try {
-    if (q) searchRequest = JSON.parse(decodeURIComponent(q)) as SearchRequest;
-  } catch {
-    // malformed q param — fall back to no filters
-  }
+  const params = await searchParams;
+  const player = typeof params.player === 'string' ? params.player : undefined;
+  const searchRequest: SearchRequest = Object.keys(params).some((k) => k !== 'player')
+    ? deserializeSearchRequest(params)
+    : EMPTY_REQUEST;
 
   const pageStart = performance.now();
   const { totalGames, factionStats, queryMs } = await getPlayerAnalytics(player, searchRequest);
@@ -89,7 +87,7 @@ export default async function AnalyticsPage({
                           { race: stat.raceName },
                         ],
                       };
-                  const rowHref = `/results?q=${encodeURIComponent(JSON.stringify(rowRequest))}`;
+                  const rowHref = `/results?${serializeSearchRequest(rowRequest)}`;
                   return (
                   <tr key={stat.raceName} className="border-b border-gray-100 hover:bg-gray-50 cursor-pointer">
                     <td className="px-4 py-3">

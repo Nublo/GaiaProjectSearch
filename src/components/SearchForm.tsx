@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import type { SearchRequest, StructureCondition, ResearchCondition, AdvancedTechCondition, StandardTechCondition } from '@/types/game';
 import { FINAL_SCORING_NAMES, getFinalScoringName, RESEARCH_TRACK_SHORT_NAMES, ADVANCED_TECH_LABELS, ADVANCED_TECH_IMAGES, STANDARD_TECH_LABELS, STANDARD_TECH_IMAGES } from '@/lib/gaia-constants';
+import { serializeSearchRequest } from '@/lib/search-url';
 
 interface FormState {
   winnerRace?: string;
@@ -967,7 +968,8 @@ export default function SearchForm({ onSearch, isLoading = false }: SearchFormPr
             onClick={() => {
               const req = buildSearchRequest();
               const playerParam = analyticsPlayer ? `player=${encodeURIComponent(analyticsPlayer)}&` : '';
-              window.open(`/analytics?${playerParam}q=${encodeURIComponent(JSON.stringify(req))}`, '_blank');
+              const qs = serializeSearchRequest(req);
+              window.open(`/analytics?${playerParam}${qs}`, '_blank');
             }}
             className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors whitespace-nowrap"
           >
