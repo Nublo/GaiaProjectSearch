@@ -12,6 +12,7 @@ export class BGAClient {
   private browser: Browser | null = null;
   private context: BrowserContext | null = null;
   private page: Page | null = null;
+  private apiPage: Page | null = null;
   private request: APIRequestContext | null = null;
   private options: BGAClientOptions;
 
@@ -43,6 +44,7 @@ export class BGAClient {
       });
 
       this.page = await this.context.newPage();
+      this.apiPage = await this.context.newPage();
       this.request = this.context.request;
 
       // Navigate to BGA homepage (establishes cookies via real Chromium)
@@ -128,6 +130,10 @@ export class BGAClient {
         this.session.requestToken = idtCookie.value;
       }
 
+      // Reload the main page as the authenticated user so it establishes
+      // a logged-in presence WebSocket that stays alive for the whole session.
+      await this.page!.goto(this.baseUrl, { waitUntil: 'networkidle' });
+
       console.log('[BGAClient] Login successful');
       console.log('[BGAClient] User ID:', loginResponse.data.user_id);
       console.log('[BGAClient] Username:', loginResponse.data.username);
@@ -173,7 +179,7 @@ export class BGAClient {
    * Bypasses Sentry's fetch wrapper since it's a navigation, not a programmatic fetch.
    */
   private async browserNavigate<T>(url: string, extraHeaders: Record<string, string> = {}): Promise<T> {
-    if (!this.page) {
+    if (!this.apiPage) {
       throw new Error('Client not initialized. Call initialize() first.');
     }
 
@@ -181,7 +187,7 @@ export class BGAClient {
 
     // Intercept the specific request to add custom headers
     const urlPattern = url.split('?')[0] + '*';
-    await this.page.route(urlPattern, async (route) => {
+    await this.apiPage.route(urlPattern, async (route) => {
       await route.continue({
         headers: {
           ...route.request().headers(),
@@ -192,7 +198,7 @@ export class BGAClient {
     });
 
     try {
-      const response = await this.page.goto(url, { waitUntil: 'load' });
+      const response = await this.apiPage.goto(url, { waitUntil: 'load' });
 
       if (!response) {
         throw new Error('No response received from navigation');
@@ -206,7 +212,7 @@ export class BGAClient {
       const body = await response.body();
       return JSON.parse(body.toString());
     } finally {
-      await this.page.unroute(urlPattern);
+      await this.apiPage.unroute(urlPattern);
     }
   }
 
@@ -215,13 +221,13 @@ export class BGAClient {
    * Uses networkidle to ensure BGA's JS has fully executed.
    */
   private async navigateTo(url: string): Promise<void> {
-    if (!this.page) {
+    if (!this.apiPage) {
       throw new Error('Client not initialized. Call initialize() first.');
     }
-    await this.page.goto(url, { waitUntil: 'networkidle' });
+    await this.apiPage.goto(url, { waitUntil: 'networkidle' });
 
     // Refresh request token from the page (BGA may rotate it on each page load)
-    const newToken = await this.page.evaluate(() => {
+    const newToken = await this.apiPage.evaluate(() => {
       return (window as any).bgaConfig?.requestToken as string | undefined;
     });
     if (newToken) {
@@ -257,6 +263,7 @@ export class BGAClient {
       this.browser = null;
       this.context = null;
       this.page = null;
+      this.apiPage = null;
       this.request = null;
     }
   }
