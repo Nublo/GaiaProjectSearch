@@ -27,7 +27,6 @@ export default async function LeaderboardPage({
       <div className="container mx-auto px-4">
         <div className="w-full max-w-4xl mx-auto px-6 pt-2 pb-6">
           <h1 className="text-3xl font-bold text-gray-900">Leaderboard</h1>
-          <p className="text-gray-500 mt-1 text-sm">Top 5 games by category</p>
         </div>
 
         {sections.map(({ category, label, games }) => (
