@@ -366,6 +366,88 @@ export async function searchGames(req: SearchRequest): Promise<SearchGamesResult
   return { games: games as GameResult[], queryMs: Math.round(performance.now() - dbStart) };
 }
 
+const LEADERBOARD_COLUMNS = {
+  qicPoints: 'qic_points',
+  techPoints: 'tech_points',
+  totalScoredPoints: 'total_scored_points',
+} as const;
+
+type LeaderboardCategory = keyof typeof LEADERBOARD_COLUMNS;
+
+export interface LeaderboardSection {
+  category: LeaderboardCategory;
+  label: string;
+  games: GameResult[];
+}
+
+export async function getLeaderboardGames(limit = 3): Promise<LeaderboardSection[]> {
+  const GAME_SELECT = {
+    id: true,
+    tableId: true,
+    playerCount: true,
+    winnerName: true,
+    minPlayerElo: true,
+    finalScorings: true,
+    isComplete: true,
+    players: {
+      select: {
+        id: true,
+        playerId: true,
+        playerName: true,
+        raceId: true,
+        raceName: true,
+        finalScore: true,
+        playerElo: true,
+        isWinner: true,
+        buildingsData: true,
+        researchData: true,
+        advancedTechsData: true,
+        standardTechsData: true,
+        qicPoints: true,
+        techPoints: true,
+        totalScoredPoints: true,
+        factionCost: true,
+      },
+    },
+  } as const;
+
+  const categories: { key: LeaderboardCategory; label: string }[] = [
+    { key: 'qicPoints', label: 'QIC Points' },
+    { key: 'techPoints', label: 'Tech Points' },
+    { key: 'totalScoredPoints', label: 'Total Points' },
+  ];
+
+  const sections = await Promise.all(
+    categories.map(async ({ key, label }) => {
+      const column = LEADERBOARD_COLUMNS[key];
+      const sorted = await prisma.$queryRaw<{ table_id: number }[]>`
+        SELECT p.table_id
+        FROM players p
+        JOIN games g ON g.table_id = p.table_id
+        WHERE g.is_complete = true
+        GROUP BY p.table_id
+        ORDER BY MAX(p.${Prisma.raw(column)}) DESC
+        LIMIT ${limit}
+      `;
+      const tableIds = sorted.map((r) => r.table_id);
+      if (tableIds.length === 0) return { category: key, label, games: [] };
+
+      const gamesData = await prisma.game.findMany({
+        where: { tableId: { in: tableIds } },
+        select: GAME_SELECT,
+      });
+      const gamesById = new Map(gamesData.map((g) => [g.tableId, g]));
+      const games = tableIds
+        .map((id) => gamesById.get(id))
+        .filter((g): g is NonNullable<typeof g> => g != null);
+
+      return { category: key, label, games: games as GameResult[] };
+    })
+  );
+
+  return sections;
+}
+
 export interface FactionStat {
   raceName: string;
   avgPts: number;
