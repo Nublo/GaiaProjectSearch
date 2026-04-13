@@ -18,6 +18,9 @@ export const metadata: Metadata = {
   title: "Gaia Project Search — BGA Game Database",
   description: "Search and analyze thousands of Gaia Project games from Board Game Arena. Filter by race, buildings built, research track levels, ELO, and more.",
   keywords: ["Gaia Project", "Board Game Arena", "BGA", "strategy game", "game search", "game database"],
+  verification: {
+    google: 'bg_URng5ZYiDI63lm0KSUvMQXc4JhGwPtb4LHrLjmnE',
+  },
   openGraph: {
     title: "Gaia Project Search",
     description: "Search and analyze BGA Gaia Project games by race, buildings, research tracks, and ELO.",
