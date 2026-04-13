@@ -14,8 +14,17 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Gaia Project Search",
-  description: "Search and analyze Board Game Arena Gaia Project games",
+  metadataBase: new URL('https://gaiaproject-search.vercel.app'),
+  title: "Gaia Project Search — BGA Game Database",
+  description: "Search and analyze thousands of Gaia Project games from Board Game Arena. Filter by race, buildings built, research track levels, ELO, and more.",
+  keywords: ["Gaia Project", "Board Game Arena", "BGA", "strategy game", "game search", "game database"],
+  openGraph: {
+    title: "Gaia Project Search",
+    description: "Search and analyze BGA Gaia Project games by race, buildings, research tracks, and ELO.",
+    url: 'https://gaiaproject-search.vercel.app',
+    siteName: "Gaia Project Search",
+    type: "website",
+  },
 };
 
 export default function RootLayout({
