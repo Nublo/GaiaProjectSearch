@@ -9,13 +9,13 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 1,
     },
     {
-      url: 'https://gaiaproject-search.vercel.app/leaderboard',
+      url: 'https://gaia-project-search.vercel.app/leaderboard',
       lastModified: new Date(),
       changeFrequency: 'weekly',
       priority: 0.8,
     },
     {
-      url: 'https://gaiaproject-search.vercel.app/analytics',
+      url: 'https://gaia-project-search.vercel.app/analytics',
       lastModified: new Date(),
       changeFrequency: 'weekly',
       priority: 0.7,
