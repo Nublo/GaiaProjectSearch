@@ -59,6 +59,8 @@ export class GameCollector {
     this.options.onProgress(`\n🎯 Collecting games for ${stats.playerName} (ID: ${playerId})`);
 
     let page = 1;
+    let consecutiveFailures = 0;
+    const MAX_CONSECUTIVE_FAILURES = 3;
 
     while (page <= this.options.maxPages) {
       try {
@@ -128,6 +130,7 @@ export class GameCollector {
           break;
         }
 
+        consecutiveFailures = 0;
         page++;
       } catch (error) {
         // Propagate rate limit errors up
@@ -137,6 +140,11 @@ export class GameCollector {
 
         const errorMsg = error instanceof Error ? error.message : String(error);
         this.options.onProgress(`   ❌ Failed to fetch page ${page}: ${errorMsg}`);
+        consecutiveFailures++;
+        if (consecutiveFailures >= MAX_CONSECUTIVE_FAILURES) {
+          this.options.onProgress(`   🛑 ${MAX_CONSECUTIVE_FAILURES} consecutive page failures — stopping collection.\n`);
+          break;
+        }
         page++;
       }
     }

@@ -224,7 +224,7 @@ export class BGAClient {
     if (!this.apiPage) {
       throw new Error('Client not initialized. Call initialize() first.');
     }
-    await this.apiPage.goto(url, { waitUntil: 'networkidle' });
+    await this.apiPage.goto(url, { waitUntil: 'load' });
 
     // Refresh request token from the page (BGA may rotate it on each page load)
     const newToken = await this.apiPage.evaluate(() => {
