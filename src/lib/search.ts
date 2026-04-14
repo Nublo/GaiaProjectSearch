@@ -741,6 +741,10 @@ export async function getPlayerAnalytics(playerName: string | undefined, req: Se
       rankMap.set(sorted[i].playerName, rank);
     }
 
+    // Compute ELO stats across all players in the game
+    const gameEloSum = players.reduce((sum, p) => sum + (p.playerElo ?? 0), 0);
+    const gameEloCount = players.filter((p) => p.playerElo != null).length;
+
     const scoringPlayers = playerName
       ? players.filter((p) => p.playerName.toLowerCase() === playerName.toLowerCase())
       : players;
@@ -753,12 +757,15 @@ export async function getPlayerAnalytics(playerName: string | undefined, req: Se
       const existing = factionAccum.get(raceName) ?? { scoreSum: 0, ptsSum: 0, eloSum: 0, eloCount: 0, count: 0, places: [0, 0, 0, 0] as [number, number, number, number] };
       const newPlaces: [number, number, number, number] = [...existing.places] as [number, number, number, number];
       if (place >= 1 && place <= 4) newPlaces[place - 1]++;
-      const elo = targetPlayer.playerElo;
+      // Player-specific view: average ELO of all participants in those games.
+      // Global view: ELO of the player who played this faction (keeps each faction's value distinct).
+      const eloAdd = playerName ? gameEloSum : (targetPlayer.playerElo ?? 0);
+      const eloCountAdd = playerName ? gameEloCount : (targetPlayer.playerElo != null ? 1 : 0);
       factionAccum.set(raceName, {
         scoreSum: existing.scoreSum + f,
         ptsSum: existing.ptsSum + targetPlayer.finalScore,
-        eloSum: existing.eloSum + (elo ?? 0),
-        eloCount: existing.eloCount + (elo != null ? 1 : 0),
+        eloSum: existing.eloSum + eloAdd,
+        eloCount: existing.eloCount + eloCountAdd,
         count: existing.count + 1,
         places: newPlaces,
       });
