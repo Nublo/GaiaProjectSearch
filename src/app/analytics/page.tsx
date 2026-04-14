@@ -67,6 +67,7 @@ export default async function AnalyticsPage({
                   <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide w-full">Faction</th>
                   <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wide">Score</th>
                   <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wide">AVG pts</th>
+                  <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wide">AVG ELO</th>
                   <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wide whitespace-nowrap">1st | 2nd | 3rd | 4th (total)</th>
                 </tr>
               </thead>
@@ -114,6 +115,11 @@ export default async function AnalyticsPage({
                         {stat.avgPts.toFixed(1)}
                       </a>
                     </td>
+                    <td className="px-4 py-3 text-right font-mono text-gray-700">
+                      <a href={rowHref} target="_blank" rel="noreferrer" className="block">
+                        {stat.avgElo > 0 ? Math.round(stat.avgElo) : '—'}
+                      </a>
+                    </td>
                     <td className="px-4 py-3 text-right font-mono text-gray-600 whitespace-nowrap">
                       <a href={rowHref} target="_blank" rel="noreferrer" className="block">
                         {stat.places.map((count, i) => (
@@ -126,7 +132,7 @@ export default async function AnalyticsPage({
                 })}
                 {factionStats.length === 0 && (
                   <tr>
-                    <td colSpan={4} className="px-4 py-8 text-center text-gray-500">
+                    <td colSpan={5} className="px-4 py-8 text-center text-gray-500">
                       No games found with these filters
                     </td>
                   </tr>

@@ -46,6 +46,12 @@ Example search queries:
 ### Key Implementation Notes
 
 **Re-parsing existing games**: `raw_game_log.rawLog.data.logs` contains the full BGA event stream. New fields can be backfilled without re-collecting from BGA.
+Introducing new fields requires next steps:
+- Introduce new field in prisma/schema.prisma
+- Update game-parser.ts logic to include new field
+- Run migration on a local database
+- Write a backfill script to fill new field (fetch in batches for 100 games, due to rawLogs are quite large)
+- After backfilling local database push updates for this specific field to the remote database
 
 **Search pattern**: "Find games where ANY player matches condition" — uses `players: { some: { ... } }` or raw SQL EXISTS. Returns entire game rows with all players.
 

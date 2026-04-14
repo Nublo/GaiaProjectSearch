@@ -451,6 +451,7 @@ export async function getLeaderboardGames(limit = 3): Promise<LeaderboardSection
 export interface FactionStat {
   raceName: string;
   avgPts: number;
+  avgElo: number;
   score: number;
   gamesCount: number;
   places: [number, number, number, number]; // counts for 1st, 2nd, 3rd, 4th place
@@ -716,13 +717,13 @@ export async function getPlayerAnalytics(playerName: string | undefined, req: Se
     select: {
       playerCount: true,
       players: {
-        select: { playerName: true, raceName: true, finalScore: true },
+        select: { playerName: true, raceName: true, finalScore: true, playerElo: true },
       },
     },
   });
 
   const totalGames = games.length;
-  const factionAccum = new Map<string, { scoreSum: number; ptsSum: number; count: number; places: [number, number, number, number] }>();
+  const factionAccum = new Map<string, { scoreSum: number; ptsSum: number; eloSum: number; eloCount: number; count: number; places: [number, number, number, number] }>();
 
   for (const game of games) {
     const { playerCount, players } = game;
@@ -749,17 +750,26 @@ export async function getPlayerAnalytics(playerName: string | undefined, req: Se
       const f = playerCount - place;
       const raceName = targetPlayer.raceName;
 
-      const existing = factionAccum.get(raceName) ?? { scoreSum: 0, ptsSum: 0, count: 0, places: [0, 0, 0, 0] as [number, number, number, number] };
+      const existing = factionAccum.get(raceName) ?? { scoreSum: 0, ptsSum: 0, eloSum: 0, eloCount: 0, count: 0, places: [0, 0, 0, 0] as [number, number, number, number] };
       const newPlaces: [number, number, number, number] = [...existing.places] as [number, number, number, number];
       if (place >= 1 && place <= 4) newPlaces[place - 1]++;
-      factionAccum.set(raceName, { scoreSum: existing.scoreSum + f, ptsSum: existing.ptsSum + targetPlayer.finalScore, count: existing.count + 1, places: newPlaces });
+      const elo = targetPlayer.playerElo;
+      factionAccum.set(raceName, {
+        scoreSum: existing.scoreSum + f,
+        ptsSum: existing.ptsSum + targetPlayer.finalScore,
+        eloSum: existing.eloSum + (elo ?? 0),
+        eloCount: existing.eloCount + (elo != null ? 1 : 0),
+        count: existing.count + 1,
+        places: newPlaces,
+      });
     }
   }
 
   const factionStats: FactionStat[] = Array.from(factionAccum.entries())
-    .map(([raceName, { scoreSum, ptsSum, count, places }]) => ({
+    .map(([raceName, { scoreSum, ptsSum, eloSum, eloCount, count, places }]) => ({
       raceName,
       avgPts: ptsSum / count,
+      avgElo: eloCount > 0 ? eloSum / eloCount : 0,
       score: scoreSum / count,
       gamesCount: count,
       places,
