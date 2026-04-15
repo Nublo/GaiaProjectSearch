@@ -76,11 +76,6 @@ export default function SearchForm({ onSearch, isLoading = false }: SearchFormPr
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [showWinnerSuggestions, setShowWinnerSuggestions] = useState(false);
 
-  // Analytics player name
-  const [analyticsPlayer, setAnalyticsPlayer] = useState('');
-  const [analyticsPlayerName, setAnalyticsPlayerName] = useState('');
-  const [showAnalyticsSuggestions, setShowAnalyticsSuggestions] = useState(false);
-
   // Played by dropdowns (keyed by race name)
   const [showPlayedBySuggestions, setShowPlayedBySuggestions] = useState<Record<string, boolean>>({});
 
@@ -102,13 +97,6 @@ export default function SearchForm({ onSearch, isLoading = false }: SearchFormPr
     criteria.winnerPlayerName && criteria.winnerPlayerName.length >= 2
       ? allPlayerNames
           .filter((n) => n.toLowerCase().includes(criteria.winnerPlayerName!.toLowerCase()))
-          .slice(0, 5)
-      : [];
-
-  const analyticsSuggestions =
-    analyticsPlayerName.length >= 2
-      ? allPlayerNames
-          .filter((n) => n.toLowerCase().includes(analyticsPlayerName.toLowerCase()))
           .slice(0, 5)
       : [];
 
@@ -161,8 +149,6 @@ export default function SearchForm({ onSearch, isLoading = false }: SearchFormPr
     setPlayerNameConditions([]);
     setPlayerCountConditions([]);
     setFinalScoringConditions([]);
-    setAnalyticsPlayer('');
-    setAnalyticsPlayerName('');
   };
 
   function toggleFraction(name: string) {
@@ -947,9 +933,20 @@ export default function SearchForm({ onSearch, isLoading = false }: SearchFormPr
         <button
           type="submit"
           disabled={isLoading}
-          className="flex-1 bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+          className="flex-1 bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors text-center"
         >
           {isLoading ? 'Searching...' : 'Search'}
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            const req = buildSearchRequest();
+            const qs = serializeSearchRequest(req);
+            window.open(`/analytics?${qs}`, '_blank');
+          }}
+          className="flex-1 bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 transition-colors text-center"
+        >
+          Analytics
         </button>
         <button
           type="button"
@@ -958,56 +955,6 @@ export default function SearchForm({ onSearch, isLoading = false }: SearchFormPr
         >
           Reset
         </button>
-      </div>
-
-      {/* Analytics */}
-      <div className="mt-4 border-t border-gray-200 pt-4">
-        <div className="flex gap-3 items-center">
-          <button
-            type="button"
-            onClick={() => {
-              const req = buildSearchRequest();
-              const playerParam = analyticsPlayer ? `player=${encodeURIComponent(analyticsPlayer)}&` : '';
-              const qs = serializeSearchRequest(req);
-              window.open(`/analytics?${playerParam}${qs}`, '_blank');
-            }}
-            className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors whitespace-nowrap"
-          >
-            Analytics
-          </button>
-          {analyticsPlayer ? (
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-indigo-50 border border-indigo-200 rounded-full text-sm text-indigo-800">
-              Player: <strong>{analyticsPlayer}</strong>
-              <button type="button" onClick={() => setAnalyticsPlayer('')} className="ml-1 text-indigo-400 hover:text-indigo-600">×</button>
-            </span>
-          ) : (
-            <div className="relative flex-1">
-              <input
-                type="text"
-                value={analyticsPlayerName}
-                onChange={(e) => { setAnalyticsPlayerName(e.target.value); setShowAnalyticsSuggestions(true); }}
-                onFocus={() => setShowAnalyticsSuggestions(true)}
-                onBlur={() => setTimeout(() => setShowAnalyticsSuggestions(false), 150)}
-                placeholder="For player"
-                autoComplete="off"
-                className={inputClassName}
-              />
-              {showAnalyticsSuggestions && analyticsSuggestions.length > 0 && (
-                <ul className="absolute z-10 w-full bg-white border border-gray-200 rounded-md shadow-lg mt-1 overflow-hidden">
-                  {analyticsSuggestions.map((name) => (
-                    <li
-                      key={name}
-                      onMouseDown={() => { setAnalyticsPlayer(name); setAnalyticsPlayerName(''); setShowAnalyticsSuggestions(false); }}
-                      className="px-3 py-2 text-sm text-gray-800 hover:bg-blue-50 cursor-pointer"
-                    >
-                      {name}
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          )}
-        </div>
       </div>
     </form>
   );

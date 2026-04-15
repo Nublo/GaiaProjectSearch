@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Image from 'next/image';
-import { getPlayerAnalytics } from '@/lib/search';
+import { getAnalytics } from '@/lib/search';
 import { SearchCriteriaSummary, RACE_IMAGE_FILES } from '@/components/SearchCriteriaSummary';
 import type { SearchRequest } from '@/types/game';
 import { deserializeSearchRequest, serializeSearchRequest } from '@/lib/search-url';
@@ -22,13 +22,11 @@ export default async function AnalyticsPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const params = await searchParams;
-  const player = typeof params.player === 'string' ? params.player : undefined;
-  const searchRequest: SearchRequest = Object.keys(params).some((k) => k !== 'player')
+  const searchRequest: SearchRequest = Object.keys(params).length > 0
     ? deserializeSearchRequest(params)
     : EMPTY_REQUEST;
-
   const pageStart = performance.now();
-  const { totalGames, factionStats, queryMs } = await getPlayerAnalytics(player, searchRequest);
+  const { totalGames, factionStats, queryMs } = await getAnalytics(searchRequest);
   const renderMs = Math.round(performance.now() - pageStart);
 
   const placeWidths = [0, 1, 2, 3].map((i) =>
@@ -41,7 +39,9 @@ export default async function AnalyticsPage({
       <div className="container mx-auto px-4">
         <div className="w-full max-w-4xl mx-auto px-6 pt-2 pb-4">
           <h1 className="text-3xl font-bold text-gray-900">Analytics</h1>
-          {player && <p className="text-lg text-gray-600 mt-1">Player: <strong>{player}</strong></p>}
+          {searchRequest.playerNames?.length === 1 && (
+            <p className="text-lg text-gray-600 mt-1">Player: <strong>{searchRequest.playerNames[0]}</strong></p>
+          )}
         </div>
 
         <div className="w-full max-w-4xl mx-auto px-6 pb-4">
@@ -73,21 +73,13 @@ export default async function AnalyticsPage({
               </thead>
               <tbody>
                 {factionStats.map((stat) => {
-                  const rowRequest = player
-                    ? {
-                        ...searchRequest,
-                        playerRaceConditions: [
-                          ...(searchRequest.playerRaceConditions ?? []),
-                          { playerName: player, race: stat.raceName },
-                        ],
-                      }
-                    : {
-                        ...searchRequest,
-                        structureConditions: [
-                          ...(searchRequest.structureConditions ?? []),
-                          { race: stat.raceName },
-                        ],
-                      };
+                  const rowRequest = {
+                    ...searchRequest,
+                    structureConditions: [
+                      ...(searchRequest.structureConditions ?? []),
+                      { race: stat.raceName },
+                    ],
+                  };
                   const rowHref = `/results?${serializeSearchRequest(rowRequest)}`;
                   return (
                   <tr key={stat.raceName} className="border-b border-gray-100 hover:bg-gray-50 cursor-pointer">

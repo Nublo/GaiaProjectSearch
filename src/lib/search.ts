@@ -463,7 +463,7 @@ export interface PlayerAnalyticsResult {
   queryMs: number;
 }
 
-export async function getPlayerAnalytics(playerName: string | undefined, req: SearchRequest): Promise<PlayerAnalyticsResult> {
+export async function getAnalytics(req: SearchRequest): Promise<PlayerAnalyticsResult> {
   const {
     winnerRace,
     winnerPlayerName,
@@ -478,14 +478,14 @@ export async function getPlayerAnalytics(playerName: string | undefined, req: Se
     playerRaceConditions = [],
   } = req;
 
+  // When exactly one player name is filtered, enable player-specific analytics view
+  const playerName = playerNames.length === 1 ? playerNames[0] : undefined;
+
   const andConditions: Prisma.GameWhereInput[] = [];
 
   // Always enforce completed multi-player games
   andConditions.push({ isComplete: true });
   andConditions.push({ playerCount: { gt: 1 } });
-  if (playerName) {
-    andConditions.push({ players: { some: { playerName: { contains: playerName, mode: 'insensitive' } } } });
-  }
 
   if (minPlayerElo) {
     andConditions.push({ minPlayerElo: { gte: minPlayerElo } });
