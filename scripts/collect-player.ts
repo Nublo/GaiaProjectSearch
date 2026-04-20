@@ -1,5 +1,6 @@
 import { BGAClient } from '../src/lib/bga-client';
 import { GameCollector, RateLimitError, CollectionStats } from '../src/lib/game-collector';
+import { ensureVpnConnected } from './vpn-helper';
 import * as dotenv from 'dotenv';
 
 dotenv.config();
@@ -27,6 +28,8 @@ async function collectPlayer() {
   console.log('='.repeat(70));
   console.log('🎮 BGA Gaia Project - Player Collection');
   console.log('='.repeat(70));
+
+  await ensureVpnConnected();
 
   const client = new BGAClient();
 

@@ -1,5 +1,6 @@
 import { BGAClient } from '../src/lib/bga-client';
 import { GameCollector } from '../src/lib/game-collector';
+import { ensureVpnConnected } from './vpn-helper';
 import * as dotenv from 'dotenv';
 
 dotenv.config();
@@ -16,6 +17,8 @@ async function collectTop10() {
   console.log('='.repeat(70));
   console.log('🎮 BGA Gaia Project - Top 10 Players Collection');
   console.log('='.repeat(70));
+
+  await ensureVpnConnected();
 
   const client = new BGAClient();
 

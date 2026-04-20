@@ -61,12 +61,15 @@ export class GameCollector {
     let page = 1;
     let consecutiveFailures = 0;
     const MAX_CONSECUTIVE_FAILURES = 3;
+    let archivedLogErrors = 0;
+    const MAX_ARCHIVED_LOG_ERRORS = 10;
 
     while (page <= this.options.maxPages) {
       try {
         this.options.onProgress(`   📄 Fetching page ${page}...`);
 
         // Fetch games for this page
+        await this.delay(500 + Math.random() * 1500); // random delay to prevent bga from understanding scriptic requests
         const gamesResponse = await this.client.getPlayerFinishedGames(playerId, 1495, page);
         await this.delay(this.options.rateLimit);
         const games = gamesResponse.data.tables;
@@ -94,15 +97,35 @@ export class GameCollector {
           try {
             this.options.onProgress(`      ⬇️  Fetching game ${tableId}...`);
 
-            const logResponse = await this.client.getGameLog(gameTable.table_id);
+            // Retry loop for bot-detection errors ("archived" fake errors)
+            const MAX_ARCHIVED_RETRIES = 2;
+            let logResponse;
+            for (let attempt = 0; attempt <= MAX_ARCHIVED_RETRIES; attempt++) {
+              await this.delay(100 + Math.random() * 400);
+              try {
+                logResponse = await this.client.getGameLog(gameTable.table_id);
+                break;
+              } catch (err) {
+                const msg = err instanceof Error ? err.message : String(err);
+                if (msg.includes('Cannot find gamenotifs log file') && attempt < MAX_ARCHIVED_RETRIES) {
+                  const cooldown = 15000 + Math.random() * 30000;
+                  this.options.onProgress(`      ⚠️  Bot detection suspected, retrying in ${Math.round(cooldown / 1000)}s... (attempt ${attempt + 1}/${MAX_ARCHIVED_RETRIES})`);
+                  await this.delay(cooldown);
+                } else {
+                  throw err;
+                }
+              }
+            }
+
             await this.delay(500);
             const tableInfo = await this.client.getTableInfo(gameTable.table_id);
 
-            const parsedGame = GameLogParser.parseGameLog(gameTable, logResponse, tableInfo);
+            const parsedGame = GameLogParser.parseGameLog(gameTable, logResponse!, tableInfo);
             await storeGame(parsedGame);
 
             this.options.onProgress(`      ✅ Stored game ${tableId}`);
             stats.newGames++;
+            archivedLogErrors = 0; // reset on success
 
             // Rate limiting
             await this.delay(this.options.rateLimit);
@@ -116,6 +139,17 @@ export class GameCollector {
               stats.failedGames++;
               stats.errors.push({ tableId: gameTable.table_id, error: errorMsg });
               throw new RateLimitError(errorMsg, stats);
+            }
+
+            // Count consecutive archived log errors — too many suggest sustained bot detection
+            if (errorMsg.includes('Cannot find gamenotifs log file')) {
+              archivedLogErrors++;
+              if (archivedLogErrors >= MAX_ARCHIVED_LOG_ERRORS) {
+                this.options.onProgress(`   🛑 ${MAX_ARCHIVED_LOG_ERRORS} consecutive archived-log errors — stopping to avoid bot detection.`);
+                stats.failedGames++;
+                stats.errors.push({ tableId: gameTable.table_id, error: errorMsg });
+                return stats;
+              }
             }
 
             this.options.onProgress(`      ❌ Failed to process game ${tableId}: ${errorMsg}`);
