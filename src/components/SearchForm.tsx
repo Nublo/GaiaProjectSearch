@@ -353,6 +353,7 @@ export default function SearchForm({ onSearch, isLoading = false }: SearchFormPr
               <option value="techPoints">Tech Points</option>
               <option value="totalScoredPoints">Scored Points</option>
               <option value="finalScore">Total Points</option>
+              <option value="factionCost">Faction Cost (VP)</option>
             </select>
           </div>
 

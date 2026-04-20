@@ -249,7 +249,7 @@ export default function GameCard({ game, structureConditions = [], researchCondi
                 ))}
               </div>
               <div className="flex items-center gap-3 text-sm text-gray-600">
-                {sortBy && sortBy !== 'finalScore' && (
+                {sortBy && sortBy !== 'finalScore' && sortBy !== 'factionCost' && (
                   <span className="text-xs font-medium text-indigo-700 bg-indigo-50 border border-indigo-200 px-2 py-0.5 rounded">
                     {SORT_LABEL[sortBy]}: {player[sortBy]}
                   </span>

@@ -304,6 +304,7 @@ export async function searchGames(req: SearchRequest): Promise<SearchGamesResult
       techPoints: 'tech_points',
       totalScoredPoints: 'total_scored_points',
       finalScore: 'final_score',
+      factionCost: 'faction_cost',
     };
     const column = SORT_COLUMN[req.sortBy];
 

@@ -57,7 +57,7 @@ export interface SearchRequest {
   advancedTechConditions?: AdvancedTechCondition[];
   standardTechConditions?: StandardTechCondition[];
   playerRaceConditions?: PlayerRaceCondition[];
-  sortBy?: 'qicPoints' | 'techPoints' | 'totalScoredPoints' | 'finalScore';
+  sortBy?: 'qicPoints' | 'techPoints' | 'totalScoredPoints' | 'finalScore' | 'factionCost';
 }
 
 export interface StructureCondition {
