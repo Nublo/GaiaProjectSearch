@@ -11,6 +11,7 @@ const CATEGORY_SORT: Record<string, SearchRequest['sortBy']> = {
   qicPoints: 'qicPoints',
   techPoints: 'techPoints',
   totalScoredPoints: 'totalScoredPoints',
+  factionCost: 'factionCost',
 };
 
 export default async function LeaderboardPage({

@@ -371,6 +371,7 @@ const LEADERBOARD_COLUMNS = {
   qicPoints: 'qic_points',
   techPoints: 'tech_points',
   totalScoredPoints: 'total_scored_points',
+  factionCost: 'faction_cost',
 } as const;
 
 type LeaderboardCategory = keyof typeof LEADERBOARD_COLUMNS;
@@ -416,6 +417,7 @@ export async function getLeaderboardGames(limit = 3): Promise<LeaderboardSection
     { key: 'qicPoints', label: 'QIC Points' },
     { key: 'techPoints', label: 'Tech Points' },
     { key: 'totalScoredPoints', label: 'Total Points' },
+    { key: 'factionCost', label: 'Faction Cost' },
   ];
 
   const sections = await Promise.all(
