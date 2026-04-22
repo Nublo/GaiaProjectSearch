@@ -460,9 +460,16 @@ export interface FactionStat {
   places: [number, number, number, number]; // counts for 1st, 2nd, 3rd, 4th place
 }
 
+export interface PlayerStat {
+  playerName: string;
+  places: [number, number, number, number];
+  gamesCount: number;
+}
+
 export interface PlayerAnalyticsResult {
   totalGames: number;
   factionStats: FactionStat[];
+  playerStats: PlayerStat[];
   queryMs: number;
 }
 
@@ -583,7 +590,7 @@ export async function getAnalytics(req: SearchRequest): Promise<PlayerAnalyticsR
       `;
       const matchingTableIds = matchingGames.map((r) => r.table_id);
 
-      if (matchingTableIds.length === 0) return { totalGames: 0, factionStats: [], queryMs: Math.round(performance.now() - dbStart) };
+      if (matchingTableIds.length === 0) return { totalGames: 0, factionStats: [], playerStats: [], queryMs: Math.round(performance.now() - dbStart) };
 
       andConditions.push({ tableId: { in: matchingTableIds } });
     }
@@ -631,7 +638,7 @@ export async function getAnalytics(req: SearchRequest): Promise<PlayerAnalyticsR
       `;
       const matchingTableIds = matchingGames.map((r) => r.table_id);
 
-      if (matchingTableIds.length === 0) return { totalGames: 0, factionStats: [], queryMs: Math.round(performance.now() - dbStart) };
+      if (matchingTableIds.length === 0) return { totalGames: 0, factionStats: [], playerStats: [], queryMs: Math.round(performance.now() - dbStart) };
 
       andConditions.push({ tableId: { in: matchingTableIds } });
     }
@@ -669,7 +676,7 @@ export async function getAnalytics(req: SearchRequest): Promise<PlayerAnalyticsR
       `;
       const matchingTableIds = matchingGames.map((r) => r.table_id);
 
-      if (matchingTableIds.length === 0) return { totalGames: 0, factionStats: [], queryMs: Math.round(performance.now() - dbStart) };
+      if (matchingTableIds.length === 0) return { totalGames: 0, factionStats: [], playerStats: [], queryMs: Math.round(performance.now() - dbStart) };
 
       andConditions.push({ tableId: { in: matchingTableIds } });
     }
@@ -707,7 +714,7 @@ export async function getAnalytics(req: SearchRequest): Promise<PlayerAnalyticsR
       `;
       const matchingTableIds = matchingGames.map((r) => r.table_id);
 
-      if (matchingTableIds.length === 0) return { totalGames: 0, factionStats: [], queryMs: Math.round(performance.now() - dbStart) };
+      if (matchingTableIds.length === 0) return { totalGames: 0, factionStats: [], playerStats: [], queryMs: Math.round(performance.now() - dbStart) };
 
       andConditions.push({ tableId: { in: matchingTableIds } });
     }
@@ -727,6 +734,7 @@ export async function getAnalytics(req: SearchRequest): Promise<PlayerAnalyticsR
 
   const totalGames = games.length;
   const factionAccum = new Map<string, { scoreSum: number; ptsSum: number; eloSum: number; eloCount: number; count: number; places: [number, number, number, number] }>();
+  const playerAccum = new Map<string, [number, number, number, number]>();
 
   for (const game of games) {
     const { playerCount, players } = game;
@@ -772,6 +780,18 @@ export async function getAnalytics(req: SearchRequest): Promise<PlayerAnalyticsR
         count: existing.count + 1,
         places: newPlaces,
       });
+
+      if (playerNames.length > 0) {
+        const matchingFilterName = playerNames.find((n) =>
+          targetPlayer.playerName.toLowerCase().includes(n.toLowerCase())
+        );
+        if (matchingFilterName) {
+          const existingPlaces = playerAccum.get(matchingFilterName) ?? [0, 0, 0, 0] as [number, number, number, number];
+          const updatedPlaces: [number, number, number, number] = [...existingPlaces] as [number, number, number, number];
+          if (place >= 1 && place <= 4) updatedPlaces[place - 1]++;
+          playerAccum.set(matchingFilterName, updatedPlaces);
+        }
+      }
     }
   }
 
@@ -786,5 +806,10 @@ export async function getAnalytics(req: SearchRequest): Promise<PlayerAnalyticsR
     }))
     .sort((a, b) => b.score - a.score);
 
-  return { totalGames, factionStats, queryMs: Math.round(performance.now() - dbStart) };
+  const playerStats: PlayerStat[] = playerNames.map((name) => {
+    const places = playerAccum.get(name) ?? [0, 0, 0, 0] as [number, number, number, number];
+    return { playerName: name, places, gamesCount: places.reduce((a, b) => a + b, 0) };
+  });
+
+  return { totalGames, factionStats, playerStats, queryMs: Math.round(performance.now() - dbStart) };
 }

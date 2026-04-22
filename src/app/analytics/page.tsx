@@ -26,8 +26,14 @@ export default async function AnalyticsPage({
     ? deserializeSearchRequest(params)
     : EMPTY_REQUEST;
   const pageStart = performance.now();
-  const { totalGames, factionStats, queryMs } = await getAnalytics(searchRequest);
+  const { totalGames, factionStats, playerStats, queryMs } = await getAnalytics(searchRequest);
   const renderMs = Math.round(performance.now() - pageStart);
+
+  const playerCounts = searchRequest.playerCounts ?? [];
+  const show3rd = playerCounts.length === 0 || playerCounts.includes(3) || playerCounts.includes(4);
+  const show4th = playerCounts.length === 0 || playerCounts.includes(4);
+  const visiblePlaceIndices = [0, 1, ...(show3rd ? [2] : []), ...(show4th ? [3] : [])];
+
 
   const placeWidths = [0, 1, 2, 3].map((i) =>
     Math.max(...factionStats.map((s) => String(s.places[i]).length), 1)
@@ -53,10 +59,23 @@ export default async function AnalyticsPage({
           </div>
         </div>
 
-        <div className="w-full max-w-4xl mx-auto px-6 pb-4">
+        <div className="w-full max-w-4xl mx-auto px-6 pb-4 space-y-1">
           <p className="text-gray-700">
             Total games: <strong>{totalGames}</strong>
           </p>
+          {playerStats.map((ps) => (
+            <p key={ps.playerName} className="text-gray-700 font-mono text-sm">
+              <span className="font-sans font-semibold text-gray-800 mr-2">{ps.playerName}:</span>
+              {visiblePlaceIndices.map((i, idx) => (
+                <span key={i}>
+                  {['1st', '2nd', '3rd', '4th'][i]}: <strong>{ps.places[i]}</strong>
+                  {idx < visiblePlaceIndices.length - 1 ? <span className="text-gray-400 mx-1">|</span> : null}
+                </span>
+              ))}
+              <span className="text-gray-400 mx-1">|</span>
+              total: <strong>{ps.gamesCount}</strong>
+            </p>
+          ))}
         </div>
 
         <div className="w-full max-w-4xl mx-auto px-6 pb-6">
@@ -68,7 +87,9 @@ export default async function AnalyticsPage({
                   <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wide">Score</th>
                   <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wide">AVG fraction pts</th>
                   <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wide">AVG table ELO</th>
-                  <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wide whitespace-nowrap">1st | 2nd | 3rd | 4th (total)</th>
+                  <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wide whitespace-nowrap">
+                    {show4th ? '1st | 2nd | 3rd | 4th (total)' : show3rd ? '1st | 2nd | 3rd (total)' : '1st | 2nd (total)'}
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -114,8 +135,8 @@ export default async function AnalyticsPage({
                     </td>
                     <td className="px-4 py-3 text-right font-mono text-gray-600 whitespace-nowrap">
                       <a href={rowHref} target="_blank" rel="noreferrer" className="block">
-                        {stat.places.map((count, i) => (
-                          <span key={i}><span className="inline-block text-right" style={{minWidth: `${placeWidths[i]}ch`}}>{count}</span>{i < 3 ? ' | ' : ''}</span>
+                        {visiblePlaceIndices.map((i, idx) => (
+                          <span key={i}><span className="inline-block text-right" style={{minWidth: `${placeWidths[i]}ch`}}>{stat.places[i]}</span>{idx < visiblePlaceIndices.length - 1 ? ' | ' : ''}</span>
                         ))} (<span className="inline-block text-right" style={{minWidth: `${totalWidth}ch`}}>{stat.gamesCount}</span>)
                       </a>
                     </td>
