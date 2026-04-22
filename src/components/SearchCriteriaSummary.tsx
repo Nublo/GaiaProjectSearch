@@ -117,7 +117,7 @@ export function SearchCriteriaSummary({ req }: { req: SearchRequest }) {
           {req.winnerPlayerName && <Chip label="Winner" value={req.winnerPlayerName} />}
           {req.minPlayerElo && <Chip label="Min ELO" value={`≥ ${req.minPlayerElo}`} />}
           {req.playerCounts.length > 0 && <Chip label="Players" value={req.playerCounts.join(' or ')} />}
-          {req.playerNames.map((name) => <Chip key={name} label="Player" value={name} />)}
+          {req.playerNames.map((group) => <Chip key={group.join('|')} label="Player" value={group.join(' + ')} />)}
           {(req.playerRaceConditions ?? []).map((cond) => (
             <span key={`${cond.playerName}-${cond.race}`} className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-50 border border-blue-200 rounded-full text-sm text-blue-800">
               <span className="font-medium text-blue-600">{cond.playerName}</span>

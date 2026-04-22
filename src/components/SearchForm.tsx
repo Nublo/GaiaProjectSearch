@@ -67,7 +67,7 @@ export default function SearchForm({ onSearch, isLoading = false }: SearchFormPr
   const [fractionConfigs, setFractionConfigs] = useState<FractionConfig[]>([]);
   const [advancedTechDialogRace, setAdvancedTechDialogRace] = useState<string | null>(null);
   const [standardTechDialogRace, setStandardTechDialogRace] = useState<string | null>(null);
-  const [playerNameConditions, setPlayerNameConditions] = useState<string[]>([]);
+  const [playerNameConditions, setPlayerNameConditions] = useState<string[][]>([]);
   const [playerCountConditions, setPlayerCountConditions] = useState<number[]>([]);
   const [finalScoringConditions, setFinalScoringConditions] = useState<number[]>([]);
 
@@ -785,8 +785,9 @@ export default function SearchForm({ onSearch, isLoading = false }: SearchFormPr
             <button
               type="button"
               onClick={() => {
-                if (criteria.playerName && criteria.playerName.trim() && !playerNameConditions.includes(criteria.playerName)) {
-                  setPlayerNameConditions([...playerNameConditions, criteria.playerName]);
+                const name = criteria.playerName?.trim();
+                if (name) {
+                  setPlayerNameConditions([...playerNameConditions, [name]]);
                   setCriteria({ ...criteria, playerName: undefined });
                 }
               }}
@@ -798,12 +799,26 @@ export default function SearchForm({ onSearch, isLoading = false }: SearchFormPr
 
           {playerNameConditions.length > 0 && (
             <div className="mt-3 flex flex-wrap gap-2">
-              {playerNameConditions.map((name, index) => (
+              {playerNameConditions.map((group, index) => (
                 <div
                   key={index}
                   className="inline-flex items-center gap-2 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm"
                 >
-                  <span>{name}</span>
+                  <span>{group.join(' + ')}</span>
+                  <button
+                    type="button"
+                    title="Merge player from input into this group"
+                    onClick={() => {
+                      const name = criteria.playerName?.trim();
+                      if (name) {
+                        setPlayerNameConditions(playerNameConditions.map((g, i) => i === index ? [...g, name] : g));
+                        setCriteria({ ...criteria, playerName: undefined });
+                      }
+                    }}
+                    className="text-blue-600 hover:text-blue-800 font-bold"
+                  >
+                    +
+                  </button>
                   <button
                     type="button"
                     onClick={() => {

@@ -31,9 +31,14 @@ describe('serializeSearchRequest', () => {
     expect(serializeSearchRequest(EMPTY)).toBe('');
   });
 
-  it('serializes playerNames', () => {
-    const qs = serializeSearchRequest({ ...EMPTY, playerNames: ['Alice', 'Bob'] });
+  it('serializes playerNames as separate groups', () => {
+    const qs = serializeSearchRequest({ ...EMPTY, playerNames: [['Alice'], ['Bob']] });
     expect(qs).toBe('player=Alice&player=Bob');
+  });
+
+  it('serializes a merged player group with pipe separator', () => {
+    const qs = serializeSearchRequest({ ...EMPTY, playerNames: [['Alice', 'Bob']] });
+    expect(qs).toBe('player=Alice|Bob');
   });
 
   it('serializes playerCounts', () => {
@@ -183,10 +188,15 @@ describe('deserializeSearchRequest', () => {
     expect(result.sortBy).toBe('finalScore');
   });
 
-  it('handles repeated params as arrays', () => {
+  it('handles repeated params as separate groups', () => {
     const result = deserializeSearchRequest({ player: ['Alice', 'Bob'], count: ['3', '4'] });
-    expect(result.playerNames).toEqual(['Alice', 'Bob']);
+    expect(result.playerNames).toEqual([['Alice'], ['Bob']]);
     expect(result.playerCounts).toEqual([3, 4]);
+  });
+
+  it('parses pipe-separated group', () => {
+    const result = deserializeSearchRequest({ player: 'Alice|Bob' });
+    expect(result.playerNames).toEqual([['Alice', 'Bob']]);
   });
 });
 
@@ -197,7 +207,7 @@ describe('roundtrip', () => {
 
   it('preserves a complex request', () => {
     const req: SearchRequest = {
-      playerNames: ['Alice'],
+      playerNames: [['Alice']],
       playerCounts: [3, 4],
       structureConditions: [{ race: 'Terrans', structure: 'Mine', maxRound: 3 }],
       researchConditions: [{ race: 'Gleens', track: 1, minLevel: 2, maxRound: 1 }],

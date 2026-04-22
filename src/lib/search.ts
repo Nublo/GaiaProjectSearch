@@ -63,10 +63,18 @@ export async function searchGames(req: SearchRequest): Promise<SearchGamesResult
     andConditions.push({ finalScorings: { has: scoringId } });
   }
 
-  for (const name of playerNames) {
-    andConditions.push({
-      players: { some: { playerName: { contains: name, mode: 'insensitive' } } },
-    });
+  for (const group of playerNames) {
+    if (group.length === 1) {
+      andConditions.push({
+        players: { some: { playerName: { contains: group[0], mode: 'insensitive' } } },
+      });
+    } else {
+      andConditions.push({
+        OR: group.map((name) => ({
+          players: { some: { playerName: { contains: name, mode: 'insensitive' } } },
+        })),
+      });
+    }
   }
 
   for (const cond of playerRaceConditions) {
@@ -488,8 +496,8 @@ export async function getAnalytics(req: SearchRequest): Promise<PlayerAnalyticsR
     playerRaceConditions = [],
   } = req;
 
-  // When exactly one player name is filtered, enable player-specific analytics view
-  const playerName = playerNames.length === 1 ? playerNames[0] : undefined;
+  // When exactly one player group is filtered, enable player-specific analytics view
+  const singleGroup = playerNames.length === 1 ? playerNames[0] : undefined;
 
   const andConditions: Prisma.GameWhereInput[] = [];
 
@@ -520,8 +528,16 @@ export async function getAnalytics(req: SearchRequest): Promise<PlayerAnalyticsR
     andConditions.push({ finalScorings: { has: scoringId } });
   }
 
-  for (const name of playerNames) {
-    andConditions.push({ players: { some: { playerName: { contains: name, mode: 'insensitive' } } } });
+  for (const group of playerNames) {
+    if (group.length === 1) {
+      andConditions.push({ players: { some: { playerName: { contains: group[0], mode: 'insensitive' } } } });
+    } else {
+      andConditions.push({
+        OR: group.map((name) => ({
+          players: { some: { playerName: { contains: name, mode: 'insensitive' } } },
+        })),
+      });
+    }
   }
 
   for (const cond of playerRaceConditions) {
@@ -756,8 +772,8 @@ export async function getAnalytics(req: SearchRequest): Promise<PlayerAnalyticsR
     const gameEloSum = players.reduce((sum, p) => sum + (p.playerElo ?? 0), 0);
     const gameEloCount = players.filter((p) => p.playerElo != null).length;
 
-    const scoringPlayers = playerName
-      ? players.filter((p) => p.playerName.toLowerCase() === playerName.toLowerCase())
+    const scoringPlayers = singleGroup
+      ? players.filter((p) => singleGroup.some((n) => p.playerName.toLowerCase().includes(n.toLowerCase())))
       : players;
 
     for (const targetPlayer of scoringPlayers) {
@@ -770,8 +786,8 @@ export async function getAnalytics(req: SearchRequest): Promise<PlayerAnalyticsR
       if (place >= 1 && place <= 4) newPlaces[place - 1]++;
       // Player-specific view: average ELO of all participants in those games.
       // Global view: ELO of the player who played this faction (keeps each faction's value distinct).
-      const eloAdd = playerName ? gameEloSum : (targetPlayer.playerElo ?? 0);
-      const eloCountAdd = playerName ? gameEloCount : (targetPlayer.playerElo != null ? 1 : 0);
+      const eloAdd = singleGroup ? gameEloSum : (targetPlayer.playerElo ?? 0);
+      const eloCountAdd = singleGroup ? gameEloCount : (targetPlayer.playerElo != null ? 1 : 0);
       factionAccum.set(raceName, {
         scoreSum: existing.scoreSum + f,
         ptsSum: existing.ptsSum + targetPlayer.finalScore,
@@ -782,14 +798,15 @@ export async function getAnalytics(req: SearchRequest): Promise<PlayerAnalyticsR
       });
 
       if (playerNames.length > 0) {
-        const matchingFilterName = playerNames.find((n) =>
-          targetPlayer.playerName.toLowerCase().includes(n.toLowerCase())
+        const matchingGroup = playerNames.find((group) =>
+          group.some((n) => targetPlayer.playerName.toLowerCase().includes(n.toLowerCase()))
         );
-        if (matchingFilterName) {
-          const existingPlaces = playerAccum.get(matchingFilterName) ?? [0, 0, 0, 0] as [number, number, number, number];
+        if (matchingGroup) {
+          const groupKey = matchingGroup.join(' + ');
+          const existingPlaces = playerAccum.get(groupKey) ?? [0, 0, 0, 0] as [number, number, number, number];
           const updatedPlaces: [number, number, number, number] = [...existingPlaces] as [number, number, number, number];
           if (place >= 1 && place <= 4) updatedPlaces[place - 1]++;
-          playerAccum.set(matchingFilterName, updatedPlaces);
+          playerAccum.set(groupKey, updatedPlaces);
         }
       }
     }
@@ -806,9 +823,10 @@ export async function getAnalytics(req: SearchRequest): Promise<PlayerAnalyticsR
     }))
     .sort((a, b) => b.score - a.score);
 
-  const playerStats: PlayerStat[] = playerNames.map((name) => {
-    const places = playerAccum.get(name) ?? [0, 0, 0, 0] as [number, number, number, number];
-    return { playerName: name, places, gamesCount: places.reduce((a, b) => a + b, 0) };
+  const playerStats: PlayerStat[] = playerNames.map((group) => {
+    const key = group.join(' + ');
+    const places = playerAccum.get(key) ?? [0, 0, 0, 0] as [number, number, number, number];
+    return { playerName: key, places, gamesCount: places.reduce((a, b) => a + b, 0) };
   });
 
   return { totalGames, factionStats, playerStats, queryMs: Math.round(performance.now() - dbStart) };

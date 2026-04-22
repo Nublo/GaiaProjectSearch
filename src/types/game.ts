@@ -49,7 +49,7 @@ export interface SearchRequest {
   winnerRace?: string;
   winnerPlayerName?: string;
   minPlayerElo?: number;
-  playerNames: string[];
+  playerNames: string[][];
   playerCounts: number[];
   structureConditions: StructureCondition[];
   researchConditions: ResearchCondition[];

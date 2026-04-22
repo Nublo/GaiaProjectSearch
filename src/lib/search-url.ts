@@ -12,7 +12,7 @@ import type { SearchRequest } from '@/types/game';
 export function serializeSearchRequest(req: SearchRequest): string {
   const params = new URLSearchParams();
 
-  req.playerNames.forEach((n) => params.append('player', n));
+  req.playerNames.forEach((group) => params.append('player', group.join('|')));
   req.playerCounts.forEach((c) => params.append('count', String(c)));
 
   (req.structureConditions ?? []).forEach((c) => {
@@ -49,8 +49,8 @@ export function serializeSearchRequest(req: SearchRequest): string {
   if (req.minPlayerElo != null) params.set('minElo', String(req.minPlayerElo));
   if (req.sortBy) params.set('sortBy', req.sortBy);
 
-  // URLSearchParams encodes ':' as '%3A' but colons are safe in query values — keep them readable.
-  return params.toString().replace(/%3A/gi, ':');
+  // URLSearchParams encodes ':' and '|' but both are safe in query values — keep them readable.
+  return params.toString().replace(/%3A/gi, ':').replace(/%7C/gi, '|');
 }
 
 /** Trims trailing empty segments so "Terrans:Mine:" becomes "Terrans:Mine". */
@@ -78,7 +78,7 @@ export function deserializeSearchRequest(raw: Record<string, string | string[] |
   };
 
   return {
-    playerNames: get('player'),
+    playerNames: get('player').map((v) => v.split('|').filter(Boolean)),
     playerCounts: get('count').map(Number),
 
     structureConditions: get('struct').map((v) => {

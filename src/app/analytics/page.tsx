@@ -46,7 +46,7 @@ export default async function AnalyticsPage({
         <div className="w-full max-w-4xl mx-auto px-6 pt-2 pb-4">
           <h1 className="text-3xl font-bold text-gray-900">Analytics</h1>
           {searchRequest.playerNames?.length === 1 && (
-            <p className="text-lg text-gray-600 mt-1">Player: <strong>{searchRequest.playerNames[0]}</strong></p>
+            <p className="text-lg text-gray-600 mt-1">Player: <strong>{searchRequest.playerNames[0].join(' + ')}</strong></p>
           )}
         </div>
 
