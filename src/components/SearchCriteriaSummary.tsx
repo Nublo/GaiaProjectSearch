@@ -119,8 +119,8 @@ export function SearchCriteriaSummary({ req }: { req: SearchRequest }) {
           {req.playerCounts.length > 0 && <Chip label="Players" value={req.playerCounts.join(' or ')} />}
           {req.playerNames.map((group) => <Chip key={group.join('|')} label="Player" value={group.join(' + ')} />)}
           {(req.playerRaceConditions ?? []).map((cond) => (
-            <span key={`${cond.playerName}-${cond.race}`} className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-50 border border-blue-200 rounded-full text-sm text-blue-800">
-              <span className="font-medium text-blue-600">{cond.playerName}</span>
+            <span key={`${cond.playerNames.join('|')}-${cond.race}`} className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-50 border border-blue-200 rounded-full text-sm text-blue-800">
+              <span className="font-medium text-blue-600">{cond.playerNames.join(' + ')}</span>
               {RACE_IMAGE_FILES[cond.race] && (
                 <Image src={`/races/${RACE_IMAGE_FILES[cond.race]}`} alt={cond.race} width={24} height={24} className="rounded" />
               )}

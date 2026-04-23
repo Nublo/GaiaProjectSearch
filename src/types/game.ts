@@ -41,7 +41,7 @@ export interface StandardTechCondition {
 }
 
 export interface PlayerRaceCondition {
-  playerName: string;
+  playerNames: string[];
   race: string;
 }
 

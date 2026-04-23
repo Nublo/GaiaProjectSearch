@@ -80,9 +80,17 @@ export async function searchGames(req: SearchRequest): Promise<SearchGamesResult
   for (const cond of playerRaceConditions) {
     const raceId = RACE_NAME_TO_ID[cond.race];
     if (raceId !== undefined) {
-      andConditions.push({
-        players: { some: { playerName: { contains: cond.playerName, mode: 'insensitive' }, raceId } },
-      });
+      if (cond.playerNames.length === 1) {
+        andConditions.push({
+          players: { some: { playerName: { contains: cond.playerNames[0], mode: 'insensitive' }, raceId } },
+        });
+      } else {
+        andConditions.push({
+          OR: cond.playerNames.map((name) => ({
+            players: { some: { playerName: { contains: name, mode: 'insensitive' }, raceId } },
+          })),
+        });
+      }
     }
   }
 
@@ -543,9 +551,17 @@ export async function getAnalytics(req: SearchRequest): Promise<PlayerAnalyticsR
   for (const cond of playerRaceConditions) {
     const raceId = RACE_NAME_TO_ID[cond.race];
     if (raceId !== undefined) {
-      andConditions.push({
-        players: { some: { playerName: { contains: cond.playerName, mode: 'insensitive' }, raceId } },
-      });
+      if (cond.playerNames.length === 1) {
+        andConditions.push({
+          players: { some: { playerName: { contains: cond.playerNames[0], mode: 'insensitive' }, raceId } },
+        });
+      } else {
+        andConditions.push({
+          OR: cond.playerNames.map((name) => ({
+            players: { some: { playerName: { contains: name, mode: 'insensitive' }, raceId } },
+          })),
+        });
+      }
     }
   }
 

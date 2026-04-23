@@ -41,7 +41,7 @@ export function serializeSearchRequest(req: SearchRequest): string {
   });
 
   (req.playerRaceConditions ?? []).forEach((c) => {
-    params.append('playerrace', `${c.playerName}:${c.race}`);
+    params.append('playerrace', `${c.playerNames.join('|')}:${c.race}`);
   });
 
   if (req.winnerRace) params.set('winnerRace', req.winnerRace);
@@ -117,9 +117,9 @@ export function deserializeSearchRequest(raw: Record<string, string | string[] |
     }),
 
     playerRaceConditions: get('playerrace').map((v) => {
-      const idx = v.indexOf(':');
+      const idx = v.lastIndexOf(':');
       return {
-        playerName: v.slice(0, idx),
+        playerNames: v.slice(0, idx).split('|').filter(Boolean),
         race: v.slice(idx + 1),
       };
     }),

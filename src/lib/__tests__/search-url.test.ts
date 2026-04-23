@@ -102,12 +102,20 @@ describe('serializeSearchRequest', () => {
     expect(decodeURIComponent(qs)).toBe('stdtech=:7');
   });
 
-  it('serializes playerRaceConditions', () => {
+  it('serializes playerRaceConditions single player', () => {
     const qs = serializeSearchRequest({
       ...EMPTY,
-      playerRaceConditions: [{ playerName: 'Alice', race: 'Terrans' }],
+      playerRaceConditions: [{ playerNames: ['Alice'], race: 'Terrans' }],
     });
     expect(decodeURIComponent(qs)).toBe('playerrace=Alice:Terrans');
+  });
+
+  it('serializes playerRaceConditions group', () => {
+    const qs = serializeSearchRequest({
+      ...EMPTY,
+      playerRaceConditions: [{ playerNames: ['Alice', 'Bob'], race: 'Terrans' }],
+    });
+    expect(decodeURIComponent(qs)).toBe('playerrace=Alice|Bob:Terrans');
   });
 
   it('serializes scalar fields', () => {
@@ -170,9 +178,14 @@ describe('deserializeSearchRequest', () => {
     expect(result.advancedTechConditions).toEqual([{ race: undefined, techId: 3 }]);
   });
 
-  it('parses playerRaceCondition', () => {
+  it('parses playerRaceCondition single player', () => {
     const result = deserializeSearchRequest({ playerrace: 'Alice:Terrans' });
-    expect(result.playerRaceConditions).toEqual([{ playerName: 'Alice', race: 'Terrans' }]);
+    expect(result.playerRaceConditions).toEqual([{ playerNames: ['Alice'], race: 'Terrans' }]);
+  });
+
+  it('parses playerRaceCondition group', () => {
+    const result = deserializeSearchRequest({ playerrace: 'Alice|Bob:Terrans' });
+    expect(result.playerRaceConditions).toEqual([{ playerNames: ['Alice', 'Bob'], race: 'Terrans' }]);
   });
 
   it('parses scalar fields', () => {
@@ -214,7 +227,7 @@ describe('roundtrip', () => {
       finalScorings: [1, 3],
       advancedTechConditions: [{ race: 'Terrans', techId: 5 }, { techId: 3 }],
       standardTechConditions: [{ techId: 7 }],
-      playerRaceConditions: [{ playerName: 'Alice', race: 'Terrans' }],
+      playerRaceConditions: [{ playerNames: ['Alice'], race: 'Terrans' }],
       winnerRace: 'Nevlas',
       winnerPlayerName: 'Bob',
       minPlayerElo: 300,

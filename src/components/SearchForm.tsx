@@ -117,7 +117,7 @@ export default function SearchForm({ onSearch, isLoading = false }: SearchFormPr
     );
     const playerRaceConditions = fractionConfigs
       .filter((fc) => fc.playedBy)
-      .map((fc) => ({ playerName: fc.playedBy!, race: fc.race }));
+      .map((fc) => ({ playerNames: [fc.playedBy!], race: fc.race }));
     return {
       winnerRace: criteria.winnerRace,
       winnerPlayerName: criteria.winnerPlayerName,

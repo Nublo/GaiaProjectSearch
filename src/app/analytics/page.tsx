@@ -94,12 +94,19 @@ export default async function AnalyticsPage({
               </thead>
               <tbody>
                 {factionStats.map((stat) => {
+                  const playerGroups = searchRequest.playerNames ?? [];
+                  const singleGroup = playerGroups.length === 1;
                   const rowRequest = {
                     ...searchRequest,
-                    structureConditions: [
-                      ...(searchRequest.structureConditions ?? []),
-                      { race: stat.raceName },
-                    ],
+                    structureConditions: singleGroup
+                      ? (searchRequest.structureConditions ?? [])
+                      : [...(searchRequest.structureConditions ?? []), { race: stat.raceName }],
+                    playerRaceConditions: singleGroup
+                      ? [
+                          ...(searchRequest.playerRaceConditions ?? []),
+                          { playerNames: playerGroups[0], race: stat.raceName },
+                        ]
+                      : (searchRequest.playerRaceConditions ?? []),
                   };
                   const rowHref = `/results?${serializeSearchRequest(rowRequest)}`;
                   return (
