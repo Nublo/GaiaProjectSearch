@@ -108,7 +108,7 @@ export class GameCollector {
               } catch (err) {
                 const msg = err instanceof Error ? err.message : String(err);
                 if (msg.includes('Cannot find gamenotifs log file') && attempt < MAX_ARCHIVED_RETRIES) {
-                  const cooldown = 15000 + Math.random() * 30000;
+                  const cooldown = 15000 + Math.random() * 15000;
                   this.options.onProgress(`      ⚠️  Bot detection suspected, retrying in ${Math.round(cooldown / 1000)}s... (attempt ${attempt + 1}/${MAX_ARCHIVED_RETRIES})`);
                   await this.delay(cooldown);
                 } else {

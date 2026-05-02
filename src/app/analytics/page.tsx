@@ -64,17 +64,39 @@ export default async function AnalyticsPage({
             Total games: <strong>{totalGames}</strong>
           </p>
           {playerStats.map((ps) => (
-            <p key={ps.playerName} className="text-gray-700 font-mono text-sm">
-              <span className="font-sans font-semibold text-gray-800 mr-2">{ps.playerName}:</span>
-              {visiblePlaceIndices.map((i, idx) => (
-                <span key={i}>
-                  {['1st', '2nd', '3rd', '4th'][i]}: <strong>{ps.places[i]}</strong>
-                  {idx < visiblePlaceIndices.length - 1 ? <span className="text-gray-400 mx-1">|</span> : null}
-                </span>
-              ))}
-              <span className="text-gray-400 mx-1">|</span>
-              total: <strong>{ps.gamesCount}</strong>
-            </p>
+            <div key={ps.playerName} className="space-y-0.5">
+              <p className="text-gray-700 font-mono text-sm">
+                <span className="font-sans font-semibold text-gray-800 mr-2">{ps.playerName}:</span>
+                {visiblePlaceIndices.map((i, idx) => (
+                  <span key={i}>
+                    {['1st', '2nd', '3rd', '4th'][i]}: <strong>{ps.places[i]}</strong>
+                    {idx < visiblePlaceIndices.length - 1 ? <span className="text-gray-400 mx-1">|</span> : null}
+                  </span>
+                ))}
+                <span className="text-gray-400 mx-1">|</span>
+                total: <strong>{ps.gamesCount}</strong>
+              </p>
+              {playerCounts.length === 0 && ps.placesByCount && [2, 3, 4].map((count) => {
+                const cp = ps.placesByCount![count];
+                if (!cp) return null;
+                const countTotal = cp.reduce((a, b) => a + b, 0);
+                if (countTotal === 0) return null;
+                const indices = count === 2 ? [0, 1] : count === 3 ? [0, 1, 2] : [0, 1, 2, 3];
+                return (
+                  <p key={count} className="text-gray-500 font-mono text-xs pl-4">
+                    {count}p:&nbsp;
+                    {indices.map((i, idx) => (
+                      <span key={i}>
+                        {['1st', '2nd', '3rd', '4th'][i]}: <strong>{cp[i]}</strong>
+                        {idx < indices.length - 1 ? <span className="text-gray-300 mx-1">|</span> : null}
+                      </span>
+                    ))}
+                    <span className="text-gray-300 mx-1">|</span>
+                    total: <strong>{countTotal}</strong>
+                  </p>
+                );
+              })}
+            </div>
           ))}
         </div>
 

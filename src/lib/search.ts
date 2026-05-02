@@ -480,6 +480,7 @@ export interface PlayerStat {
   playerName: string;
   places: [number, number, number, number];
   gamesCount: number;
+  placesByCount?: Record<number, [number, number, number, number]>;
 }
 
 export interface PlayerAnalyticsResult {
@@ -766,7 +767,7 @@ export async function getAnalytics(req: SearchRequest): Promise<PlayerAnalyticsR
 
   const totalGames = games.length;
   const factionAccum = new Map<string, { scoreSum: number; ptsSum: number; eloSum: number; eloCount: number; count: number; places: [number, number, number, number] }>();
-  const playerAccum = new Map<string, [number, number, number, number]>();
+  const playerAccum = new Map<string, Record<number, [number, number, number, number]>>();
 
   for (const game of games) {
     const { playerCount, players } = game;
@@ -819,10 +820,11 @@ export async function getAnalytics(req: SearchRequest): Promise<PlayerAnalyticsR
         );
         if (matchingGroup) {
           const groupKey = matchingGroup.join(' + ');
-          const existingPlaces = playerAccum.get(groupKey) ?? [0, 0, 0, 0] as [number, number, number, number];
+          const existingByCount = playerAccum.get(groupKey) ?? {};
+          const existingPlaces = (existingByCount[playerCount] ?? [0, 0, 0, 0]) as [number, number, number, number];
           const updatedPlaces: [number, number, number, number] = [...existingPlaces] as [number, number, number, number];
           if (place >= 1 && place <= 4) updatedPlaces[place - 1]++;
-          playerAccum.set(groupKey, updatedPlaces);
+          playerAccum.set(groupKey, { ...existingByCount, [playerCount]: updatedPlaces });
         }
       }
     }
@@ -841,8 +843,17 @@ export async function getAnalytics(req: SearchRequest): Promise<PlayerAnalyticsR
 
   const playerStats: PlayerStat[] = playerNames.map((group) => {
     const key = group.join(' + ');
-    const places = playerAccum.get(key) ?? [0, 0, 0, 0] as [number, number, number, number];
-    return { playerName: key, places, gamesCount: places.reduce((a, b) => a + b, 0) };
+    const byCount = playerAccum.get(key) ?? {};
+    const places = [0, 0, 0, 0] as [number, number, number, number];
+    for (const countPlaces of Object.values(byCount)) {
+      for (let i = 0; i < 4; i++) places[i] += countPlaces[i];
+    }
+    return {
+      playerName: key,
+      places,
+      gamesCount: places.reduce((a, b) => a + b, 0),
+      placesByCount: byCount,
+    };
   });
 
   return { totalGames, factionStats, playerStats, queryMs: Math.round(performance.now() - dbStart) };
