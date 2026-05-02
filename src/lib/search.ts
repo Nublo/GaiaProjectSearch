@@ -490,7 +490,7 @@ export interface PlayerAnalyticsResult {
   queryMs: number;
 }
 
-export async function getAnalytics(req: SearchRequest): Promise<PlayerAnalyticsResult> {
+export async function getAnalytics(req: SearchRequest, selectedGroup?: string[]): Promise<PlayerAnalyticsResult> {
   const {
     winnerRace,
     winnerPlayerName,
@@ -505,8 +505,8 @@ export async function getAnalytics(req: SearchRequest): Promise<PlayerAnalyticsR
     playerRaceConditions = [],
   } = req;
 
-  // When exactly one player group is filtered, enable player-specific analytics view
-  const singleGroup = playerNames.length === 1 ? playerNames[0] : undefined;
+  // When exactly one player group is filtered (or a group is explicitly selected), enable player-specific analytics view
+  const singleGroup = selectedGroup ?? (playerNames.length === 1 ? playerNames[0] : undefined);
 
   const andConditions: Prisma.GameWhereInput[] = [];
 

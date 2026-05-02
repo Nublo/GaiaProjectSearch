@@ -25,14 +25,26 @@ export default async function AnalyticsPage({
   const searchRequest: SearchRequest = Object.keys(params).length > 0
     ? deserializeSearchRequest(params)
     : EMPTY_REQUEST;
+
+  const selectedPlayerKey = typeof params.selectedPlayer === 'string' ? params.selectedPlayer : undefined;
+  const selectedGroup = selectedPlayerKey !== undefined
+    ? searchRequest.playerNames.find((g) => g.join(' + ') === selectedPlayerKey)
+    : undefined;
+  const effectiveSingleGroup = searchRequest.playerNames.length === 1
+    ? searchRequest.playerNames[0]
+    : selectedGroup;
+
   const pageStart = performance.now();
-  const { totalGames, factionStats, playerStats, queryMs } = await getAnalytics(searchRequest);
+  const { totalGames, factionStats, playerStats, queryMs } = await getAnalytics(searchRequest, selectedGroup);
   const renderMs = Math.round(performance.now() - pageStart);
 
   const playerCounts = searchRequest.playerCounts ?? [];
   const show3rd = playerCounts.length === 0 || playerCounts.includes(3) || playerCounts.includes(4);
   const show4th = playerCounts.length === 0 || playerCounts.includes(4);
   const visiblePlaceIndices = [0, 1, ...(show3rd ? [2] : []), ...(show4th ? [3] : [])];
+
+  const baseSearch = serializeSearchRequest(searchRequest);
+  const multipleGroups = searchRequest.playerNames.length > 1;
 
 
   const placeWidths = [0, 1, 2, 3].map((i) =>
@@ -100,6 +112,37 @@ export default async function AnalyticsPage({
           ))}
         </div>
 
+        {multipleGroups && (
+          <div className="w-full max-w-4xl mx-auto px-6 pb-4">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-sm text-gray-500">Faction stats for:</span>
+              {searchRequest.playerNames.map((group) => {
+                const key = group.join(' + ');
+                const isSelected = key === selectedPlayerKey;
+                const href = `/analytics?${baseSearch}${isSelected ? '' : `&selectedPlayer=${encodeURIComponent(key)}`}`;
+                return (
+                  <a
+                    key={key}
+                    href={href}
+                    className={`px-3 py-1 rounded-full text-sm font-medium border transition-colors ${
+                      isSelected
+                        ? 'bg-blue-100 text-blue-700 border-blue-300'
+                        : 'bg-gray-100 text-gray-600 border-gray-200 hover:bg-gray-200'
+                    }`}
+                  >
+                    {key}
+                  </a>
+                );
+              })}
+              {selectedPlayerKey && (
+                <a href={`/analytics?${baseSearch}`} className="text-xs text-gray-400 hover:text-gray-600 ml-1">
+                  All players
+                </a>
+              )}
+            </div>
+          </div>
+        )}
+
         <div className="w-full max-w-4xl mx-auto px-6 pb-6">
           <div className="bg-white rounded-lg shadow-md overflow-x-auto">
             <table className="w-full text-sm min-w-[500px]">
@@ -116,17 +159,15 @@ export default async function AnalyticsPage({
               </thead>
               <tbody>
                 {factionStats.map((stat) => {
-                  const playerGroups = searchRequest.playerNames ?? [];
-                  const singleGroup = playerGroups.length === 1;
                   const rowRequest = {
                     ...searchRequest,
-                    structureConditions: singleGroup
+                    structureConditions: effectiveSingleGroup
                       ? (searchRequest.structureConditions ?? [])
                       : [...(searchRequest.structureConditions ?? []), { race: stat.raceName }],
-                    playerRaceConditions: singleGroup
+                    playerRaceConditions: effectiveSingleGroup
                       ? [
                           ...(searchRequest.playerRaceConditions ?? []),
-                          { playerNames: playerGroups[0], race: stat.raceName },
+                          { playerNames: effectiveSingleGroup, race: stat.raceName },
                         ]
                       : (searchRequest.playerRaceConditions ?? []),
                   };
